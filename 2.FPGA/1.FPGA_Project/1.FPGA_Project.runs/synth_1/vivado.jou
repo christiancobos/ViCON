@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2019.1 (64-bit)
+# SW Build 2552052 on Fri May 24 14:49:42 MDT 2019
+# IP Build 2548770 on Fri May 24 18:01:18 MDT 2019
+# Start of session at: Thu Sep 12 00:01:23 2024
+# Process ID: 39164
+# Current directory: C:/Users/chris/OneDrive/Documentos/ViCON/ViCON/2.FPGA/1.FPGA_Project/1.FPGA_Project.runs/synth_1
+# Command line: vivado.exe -log TOP.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source TOP.tcl
+# Log file: C:/Users/chris/OneDrive/Documentos/ViCON/ViCON/2.FPGA/1.FPGA_Project/1.FPGA_Project.runs/synth_1/TOP.vds
+# Journal file: C:/Users/chris/OneDrive/Documentos/ViCON/ViCON/2.FPGA/1.FPGA_Project/1.FPGA_Project.runs/synth_1\vivado.jou
+#-----------------------------------------------------------
+source TOP.tcl -notrace
