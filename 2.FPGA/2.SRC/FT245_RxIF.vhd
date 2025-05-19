@@ -125,17 +125,15 @@ begin
                 end if;
     
             when read_1 =>
-                -- Primera lectura del dato
-                DATA_next  <= DIN;  -- Captura el dato
+                -- Primer ciclo de lectura del dato
                 state_next <= read_2;
     
             when read_2 =>
-                -- Segunda lectura del dato (mismo proceso que read_1)
-                DATA_next  <= DIN;  -- Actualiza con el dato más reciente
+                -- Segundo ciclo de lectura del dato (mismo proceso que read_1)
                 state_next <= read_3;
     
             when read_3 =>
-                -- Tercera lectura del dato, termina lectura y vuelve al estado inicial
+                -- Tercer ciclo delectura del dato, realiza lectura y vuelve al estado inicial
                 RDn_next   <= '1';  -- Termina la lectura (RDn en alto)
                 DATA_next  <= DIN;  -- Última lectura del dato
                 if rd_en = '1' then

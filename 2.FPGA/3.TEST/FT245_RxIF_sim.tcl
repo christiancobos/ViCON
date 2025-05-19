@@ -43,7 +43,7 @@ run 20 ns
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
 # **Desplazamos DIN 5 ns hacia adelante**, aplicando el primer dato justo después de RDn.
-add_force {/FT245_RxIF/DIN} -radix hex {0 0ns} {1 5ns}
+add_force {/FT245_RxIF/DIN} -radix hex {0 0ns} {1 10ns}
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -66,8 +66,8 @@ add_force {/FT245_RxIF/rd_en} -radix bin {1 0ns} {0 10ns}
 # Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
 add_force {/FT245_RxIF/RXFn} -radix bin {0 0ns} {1 10ns}
 
-# Borramos el dato en DIN.
-add_force {/FT245_RxIF/DIN} -radix hex {0 0ns}
+# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
+add_force {/FT245_RxIF/DIN} -radix hex {1 0ns} {0 10ns}
 
 # Deja tiempo suficiente para que el sistema complete la lectura y detecte que no hay más datos (6 ciclos de reloj, 60 ns).
 run 60 ns
@@ -83,7 +83,7 @@ run 20 ns
 # A este punto, RDn debería haberse activado automáticamente por la FSM (bajo).
 
 # **Desplazamos DIN 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
-add_force {/FT245_RxIF/DIN} -radix hex {0 0ns} {2 5ns}
+add_force {/FT245_RxIF/DIN} -radix hex {0 0ns} {2 10ns}
 
 # Dejamos tiempo para la captura del segundo dato (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -104,7 +104,7 @@ run 10 ns
 add_force {/FT245_RxIF/RXFn} -radix bin {0 0ns} {1 10ns}
 
 # Borramos el dato en DIN para simular que el bus está inactivo.
-add_force {/FT245_RxIF/DIN} -radix hex {2 0ns} {0 5ns}
+add_force {/FT245_RxIF/DIN} -radix hex {2 0ns} {0 10ns}
 
 # Dejamos que el sistema vuelva a estado idle y esperamos (10 ciclos de reloj, 100 ns).
 run 100 ns
