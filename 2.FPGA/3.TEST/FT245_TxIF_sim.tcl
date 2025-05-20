@@ -6,7 +6,17 @@
 ##  Descripción: EC34 - FT245 Interface Simulation.
 ###########################################################
 
+# Establecer fichero TOP de simulación.
+
+set_property top FT245_TxIF [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]
+
+# Lanzar simulación.
+
+launch_simulation
+
 # Reinicio de la simulación.
+
 restart
 
 ###########################################################
@@ -176,3 +186,7 @@ add_force {/FT245_TxIF/reset} -radix bin {1 0ns} {0 10ns}
 # Continúa la simulación 100ns.
 run 100 ns
 
+###########################################################
+
+set_property top TOP [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]

@@ -4,11 +4,19 @@
 ##  Descripción: EC34 - FT245 Interface Simulation (DIN desplazado en el tiempo).
 ###########################################################
 
+# Establecer fichero TOP de simulación.
+
+set_property top FT245_RxIF [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]
+
+# Lanzar simulación.
+
+launch_simulation
+
 # Reinicio de la simulación.
+
 restart
-set_property top FT245_RxIF [current_fileset]
-log_wave *
-report_objects
+
 
 ###########################################################
 
@@ -116,3 +124,8 @@ add_force {/FT245_RxIF/reset} -radix bin {1 0ns} {0 10ns}
 
 # Ejecutamos la simulación por 100ns para observar el comportamiento después del reset.
 run 100 ns
+
+###########################################################
+
+set_property top TOP [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]
