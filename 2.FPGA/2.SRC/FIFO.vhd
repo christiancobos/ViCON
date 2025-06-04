@@ -21,7 +21,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity FIFO is
     Generic (
-              B : NATURAL := 6; -- Anchura de bus de direcciones.
+              B : NATURAL := 2; -- Anchura de bus de direcciones.
               W : NATURAL := 8  -- Anchura de los buses de datos.
              );
              
@@ -45,17 +45,15 @@ architecture Behavioral of FIFO is
     -- END Lógica de estado --
 
     -- Lógica de control --
-    signal wr_ptr    : STD_LOGIC_VECTOR(B-1 DOWNTO 0) := (others => '0'); -- Puntero de lectura. Inicializado a 0 para comenzar cuenta.
-    signal rd_ptr    : STD_LOGIC_VECTOR(B-1 DOWNTO 0) := (others => '0'); -- Puntero de escritura. Inicializado a 0 para comenzar cuenta.
+    signal wr_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de lectura. Inicializado a 0 para comenzar cuenta.
+    signal rd_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de escritura. Inicializado a 0 para comenzar cuenta.
     -- END Lógica de control --
 
     -- LUTRAM --
     type ram_type is array (2**B-1 DOWNTO 0) of STD_LOGIC_VECTOR (W-1 DOWNTO 0);
     signal ram_name  : ram_type;                                  -- Array de memoria.
     signal wr_en     : STD_LOGIC;                                 -- Habilitación de escritura.
-    alias  wr_addr   : STD_LOGIC_VECTOR (B-1 DOWNTO 0) is wr_ptr; -- Dirección de escritura.
     signal rd_en     : STD_LOGIC;                                 -- Habilitación de lectura.
-    alias  rd_addr   : STD_LOGIC_VECTOR (B-1 DOWNTO 0) is rd_ptr; -- Dirección de lectura.
     -- END LUTRAM --
 
 begin
@@ -66,30 +64,30 @@ begin
     begin
         if rising_edge(clk) then
             if wr_en = '1' then -- Puerto de escritura.
-                ram_name(to_integer(unsigned(wr_addr))) <= DIN;
+                ram_name(to_integer(wr_ptr)) <= DIN;
             end if;
         end if;
     end process;
     
     -- Puerto de lectura.
-    DOUT <= ram_name(to_integer(unsigned(rd_addr))) when rd_en = '1' else (others => '0');
+    DOUT <= ram_name(to_integer(rd_ptr));
     
     ----- END LUTRAM -----
 
     ----- Lógica de control -----
     
     -- Lógica de habilitación.
-    wr_en <= '1' when (PUSH = '1' and is_full = '0')  else '0'; -- Habilitación escritura.
-    rd_en <= '1' when (POP  = '1' and is_empty = '0') else '0'; -- Habilitación lectura.
+    wr_en <= (PUSH and not is_full) or (PUSH and POP and is_full); -- Habilitación escritura.
+    rd_en <= POP and not is_empty;                                 -- Habilitación lectura.
     
     -- Puntero de escritura.
     process
     begin
         wait until rising_edge(CLK);
         if RST = '1' then                                     -- Reset síncrono.
-            wr_ptr <= std_logic_vector(to_unsigned(0, B));
+            wr_ptr <= to_unsigned(0, B);
         elsif wr_en = '1' then                                -- Actualización puntero escritura.
-            wr_ptr <= std_logic_vector(unsigned(wr_ptr) + 1);
+            wr_ptr <= unsigned(wr_ptr) + 1;
         end if;
     end process;
     
@@ -98,9 +96,9 @@ begin
     begin
         wait until rising_edge(CLK);
         if RST = '1' then                                     -- Reset síncrono.
-            rd_ptr <= std_logic_vector(to_unsigned(0, B));
+            rd_ptr <= to_unsigned(0, B);
         elsif rd_en = '1' then                                -- Actualización puntero lectura.
-            rd_ptr <= std_logic_vector(unsigned(rd_ptr) + 1);
+            rd_ptr <= unsigned(rd_ptr) + 1;
         end if;
     end process;
     
@@ -114,10 +112,12 @@ begin
         wait until rising_edge(CLK);
         if RST = '1' then               -- Reset síncrono.
             occupancy <= 0;
-        elsif wr_en = '1' then
+        elsif wr_en = '1' and rd_en = '0' then
             occupancy <= occupancy + 1; -- Aumento de contador con escritura.
-        elsif rd_en = '1' then
+        elsif rd_en = '1' and wr_en = '0' then
             occupancy <= occupancy - 1; -- Disminución del contador con lectura.
+        elsif rd_en = '1' and wr_en = '1' then
+            occupancy <= occupancy;     -- Cuando hay PUSH y POP simultáneo, el contador se queda igual.
         end if;            
     end process;
     
