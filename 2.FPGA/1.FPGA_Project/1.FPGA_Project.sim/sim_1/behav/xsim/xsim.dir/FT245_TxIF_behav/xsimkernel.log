@@ -1,7 +1,0 @@
-Running: xsim.dir/FT245_TxIF_behav/xsimk.exe -simmode gui -wdb FT245_TxIF_behav.wdb -simrunnum 0 -socket 58753
-Design successfully loaded
-Design Loading Memory Usage: 7376 KB (Peak: 7376 KB)
-Design Loading CPU Usage: 0 ms
-Simulation completed
-Simulation Memory Usage: 8200 KB (Peak: 8200 KB)
-Simulation CPU Usage: 30 ms

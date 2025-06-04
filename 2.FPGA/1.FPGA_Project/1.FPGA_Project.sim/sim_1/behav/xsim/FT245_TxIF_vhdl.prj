@@ -1,6 +1,0 @@
-# compile vhdl design source files
-vhdl xil_defaultlib  \
-"../../../../../2.SRC/FT245_TxIF.vhd" \
-
-# Do not sort compile order
-nosort
