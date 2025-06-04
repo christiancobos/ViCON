@@ -28,16 +28,16 @@ entity TOP is
            BTN     : in    STD_LOGIC_VECTOR (4  downto 0);  -- Botones. (0 central, 1 superior, 2 izquierda, 3 inferior, 4 derecha)
            LED     : out   STD_LOGIC_VECTOR (15 downto 0);  -- LEDs sobre los switches. (15 izquierda --> 0 derecha)
            CAT     : out   STD_LOGIC_VECTOR (7  downto 0);  -- Cátodos de los segmentos.
-           AN      : out   STD_LOGIC_VECTOR (3  downto 0); -- Ánodos de los dígitos (3 izquierda -->0 derecha).
+           AN      : out   STD_LOGIC_VECTOR (3  downto 0);  -- Ánodos de los dígitos (3 izquierda -->0 derecha).
            DATA    : inout STD_LOGIC_VECTOR (7  downto 0);  -- Datos de entrada/salida de FT245
            RXFn    : in    STD_LOGIC;
            TXEn    : in    STD_LOGIC;
            RDn     : out   STD_LOGIC;
            WRn     : out   STD_LOGIC;
-           OEn     : in    STD_LOGIC;
-           SIWUn   : in    STD_LOGIC;
-           CLKOUT  : out   STD_LOGIC;
-           PWRSAVn : out   STD_LOGIC);
+           OEn     : out   STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
+           SIWUn   : out   STD_LOGIC;                       -- Si se conecta, debe estar fijado a HIGH.
+           CLKOUT  : in    STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
+           PWRSAVn : out   STD_LOGIC);                      -- Si se conecta, debe estar fijado a HIGH.
 end TOP;
 
 architecture Behavioural of TOP is
@@ -191,5 +191,12 @@ begin
     AN  => AN      -- o(3:0)   AN3=izda ... AN00dcha
     );
     ----- END Instancia display -----
+    
+    ----- Asingación de salidas -----
+    
+    OEn <= '1';
+    PWRSAVn <= '1';
+    
+    ----- END Asignación de salidas -----
     
 end Behavioural;
