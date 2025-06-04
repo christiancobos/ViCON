@@ -1,1 +1,0 @@
--wto "b0fc19ca8d2641b5a43bd0f7bed01b60" --incr --debug "typical" --relax --mt "2" -L "xil_defaultlib" -L "secureip" -L "xpm" --snapshot "FT245_RxIF_behav" "xil_defaultlib.FT245_RxIF" -log "elaborate.log" 
