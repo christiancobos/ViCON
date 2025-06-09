@@ -116,8 +116,6 @@ begin
             occupancy <= occupancy + 1; -- Aumento de contador con escritura.
         elsif rd_en = '1' and wr_en = '0' then
             occupancy <= occupancy - 1; -- Disminución del contador con lectura.
-        elsif rd_en = '1' and wr_en = '1' then
-            occupancy <= occupancy;     -- Cuando hay PUSH y POP simultáneo, el contador se queda igual.
         end if;            
     end process;
     
