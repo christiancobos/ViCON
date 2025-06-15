@@ -45,8 +45,8 @@ architecture Behavioral of FIFO is
     -- END Lógica de estado --
 
     -- Lógica de control --
-    signal wr_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de lectura. Inicializado a 0 para comenzar cuenta.
-    signal rd_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de escritura. Inicializado a 0 para comenzar cuenta.
+    signal wr_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de escritura. Inicializado a 0 para comenzar cuenta.
+    signal rd_ptr    : UNSIGNED(B-1 DOWNTO 0) := (others => '0'); -- Puntero de lectura. Inicializado a 0 para comenzar cuenta.
     -- END Lógica de control --
 
     -- LUTRAM --

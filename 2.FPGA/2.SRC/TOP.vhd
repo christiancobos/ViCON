@@ -71,9 +71,11 @@ architecture Behavioural of TOP is
     signal COUNT_END:    STD_LOGIC;      -- Flag de final de cuenta, habilitará el contador BCD.
     
     -- Señales FT245
-    signal OUTPUT_DATA: STD_LOGIC_VECTOR (7 downto 0);
+    signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
     signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
-    
+    signal temp_RDn : STD_LOGIC;
+    signal temp_rx_pop : STD_LOGIC;
+    signal RX_EMPTY: STD_LOGIC;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -118,66 +120,54 @@ begin
     ----- END Contador FREE RUNNING. -----
     
     --- Instancia FT245 -----
---    FT245_inst: entity work.FT245
---    Port map ( 
---           CLK   => MCLK,                      -- Señal de reloj.
---           reset => RST,                      -- Señal de reset.
---           DIN   => ,  -- Dato de entrada/salida.
+    FT245_inst: entity work.FT245
+    Port map ( 
+           CLK   => MCLK,                      -- Señal de reloj.
+           reset => RST,                      -- Señal de reset.
+           DIN   => DATA,  -- Dato de entrada/salida.
 --           wr_en => ,                      -- Señal de control para habilitar escritura.
 --           rd_en => ,                       -- Señal de control para habilitar lectura.
 --           ready_rx => open,                   -- Flag de estado de recepcion.
 --           ready_tx => open,                   -- Flag de estado de transmisión.
 --           TXEn  => ,                      -- Señal de control para solizitar que se escriban datos a la salida.
 --           WRn   => ,                      -- Flag de escritura del dato.
---           RXFn => ,                        -- Señal de control para habilitar que se lean datos.
---           RDn => open,                        -- Flag de lectura del dato.
---           DATA_rx  => DDi(15 downto 8),  -- Dato recibido.
+           RXFn => RXFn,                        -- Señal de control para habilitar que se lean datos.
+           RDn  => temp_RDn,                        -- Flag de lectura del dato.
+           DATA_rx  => OUTPUT_NOW,  -- Dato recibido.
+           POP_RX   => COUNT_END,
+           RX_EMPTY => RX_EMPTY,
+           RX_DONE  => LED(14),
+           ready    => LED(12),
+           RX_FULL  => LED(1)
 --           DATA_tx  => SW(15 downto 8) -- Dato a transmitir.
---     );
+     );
     --- END Instancia FT245 -----
     
-    ----- TX Interface -----
-    FT245_instTx: entity work.FT245_TxIF
-    port map(
-        clk   => MCLK,
-        reset => RST,
-        -- USER IO -----------------------------
-        DIN   => INPUT_DATA, -- i [7:0]
-        wr_en => OEn,         -- i
-        ready => OPEN,        -- o
-        -- FT245-like interface ----------------
-        TXEn  => TXEn,        -- i
-        WRn   => WRn,         -- o
-        DATA  => OUTPUT_DATA          -- o [7:0]
-    );
-    ----- END TX Interface -----
-
-    ----- RX Interface -----
-    FT245_instRx: entity work.FT245_RxIF
-    port map(
-        clk   => MCLK,
-        reset => RST,
-        -- USER IO -----------------------------
-        DIN   => DATA,        -- i [7:0]
-        rd_en => '1',         -- i
-        ready => open,        -- o
-        -- FT245-like interface ----------------
-        RXFn  => RXFn,        -- i
-        RDn   => RDn,         -- o
-        DATA  => INPUT_DATA   -- o [7:0]
-    );
-    ----- END RX FIFO -----
+    
     
     ----- Triestado de entrada/salida de datos -----
     
-    DATA <= OUTPUT_DATA when OEn = '1' else (others => 'Z');
+    -- DATA <= OUTPUT_DATA when OEn = '1' else (others => 'Z');
+    DATA <= (others => 'Z');
     
     ----- END Triestado de entrada/salida de datos -----
     
     ----- Asignación de señales de Display -----
     
-    DDi <= "00000000" & INPUT_DATA;
-    DPi <= (others => '0');
+    process
+    begin
+        wait until rising_edge(CLK);
+        if RX_EMPTY = '0' then
+            DDi(7 downto 0) <= OUTPUT_NOW;
+            OUTPUT_NEXT <= OUTPUT_NOW;
+        else
+            DDi(7 downto 0) <= OUTPUT_NEXT;
+        end if;
+        
+    end process;
+    DDi(15 downto 8) <= "00000000";
+    DPi <= (others => '1');
+    
     
     ----- END Asignación de señales de Display -----
     
@@ -198,5 +188,9 @@ begin
     PWRSAVn <= '1';
     
     ----- END Asignación de salidas -----
+    
+    
+    ----- PRUEBAS -----
+    RDn <= temp_RDn;
     
 end Behavioural;
