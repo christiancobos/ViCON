@@ -71,10 +71,11 @@ architecture Behavioural of TOP is
     signal COUNT_END:    STD_LOGIC;      -- Flag de final de cuenta, habilitará el contador BCD.
     
     -- Señales FT245
-    signal OUTPUT_DATA: STD_LOGIC_VECTOR (7 downto 0);
+    signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
     signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
     signal temp_RDn : STD_LOGIC;
-    
+    signal temp_rx_pop : STD_LOGIC;
+    signal RX_EMPTY: STD_LOGIC;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -132,9 +133,9 @@ begin
 --           WRn   => ,                      -- Flag de escritura del dato.
            RXFn => RXFn,                        -- Señal de control para habilitar que se lean datos.
            RDn  => temp_RDn,                        -- Flag de lectura del dato.
-           DATA_rx  => DDi(7 downto 0),  -- Dato recibido.
-           POP_RX   => SW(0),
-           RX_EMPTY => LED(0),
+           DATA_rx  => OUTPUT_NOW,  -- Dato recibido.
+           POP_RX   => COUNT_END,
+           RX_EMPTY => RX_EMPTY,
            RX_DONE  => LED(14),
            ready    => LED(12),
            RX_FULL  => LED(1)
@@ -153,6 +154,17 @@ begin
     
     ----- Asignación de señales de Display -----
     
+    process
+    begin
+        wait until rising_edge(CLK);
+        if RX_EMPTY = '0' then
+            DDi(7 downto 0) <= OUTPUT_NOW;
+            OUTPUT_NEXT <= OUTPUT_NOW;
+        else
+            DDi(7 downto 0) <= OUTPUT_NEXT;
+        end if;
+        
+    end process;
     DDi(15 downto 8) <= "00000000";
     DPi <= (others => '1');
     
@@ -179,10 +191,6 @@ begin
     
     
     ----- PRUEBAS -----
-    LED(15) <= RST;
-    --LED(14) <= RDn;
-    LED(13) <= RXFn;
-    LED(10) <= temp_RDn;
     RDn <= temp_RDn;
     
 end Behavioural;

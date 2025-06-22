@@ -42,7 +42,7 @@ int main(void)
             break;
         }
 
-        printf ("Enviado byte: %d\n", (int)txByte);
+        printf ("Enviado byte: %x\n", (int)txByte);
 
         // Esperamos 1 segundo antes de volver a leer
         Sleep(1000);  // Esperar 1 segundo (1000 ms)
