@@ -63,8 +63,6 @@ architecture Behavioral of FT245 is
     
     signal fifo_rx_full    : STD_LOGIC;
     --signal fifo_tx_empty   : STD_LOGIC;
-    
-
 begin
 
     ----- FT245 RX Interface -----
@@ -103,23 +101,7 @@ begin
     rd_en <= not fifo_rx_full;
     
     ----- END Habilitación de RX -----
-    
-    ----- LÓGICA DE CONTROL -----
-    
---    FT245_instControl: entity work.FT245_control
---    port map(
---        CLK           => CLK,
---        RST           => reset,
---        fifo_rx_full  => fifo_rx_full,
---        fifo_tx_empty => fifo_tx_empty,
---        RDn           => internal_RDn,
---        WRn           => internal_WRn,
---        rd_en         => rd_en,
---        wr_en         => wr_en
---    );
-    
-    ----- END LÓGICA DE CONTROL -----
-    
+        
     ----- TX Interface -----
 --    FT245_instTx: entity work.FT245_TxIF
 --    port map(
