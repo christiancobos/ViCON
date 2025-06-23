@@ -76,6 +76,8 @@ architecture Behavioural of TOP is
     signal temp_RDn : STD_LOGIC;
     signal temp_rx_pop : STD_LOGIC;
     signal RX_EMPTY: STD_LOGIC;
+    signal tx_push_deb : STD_LOGIC;
+    signal tx_push_edge: STD_LOGIC;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -131,15 +133,19 @@ begin
 --           ready_tx => open,                   -- Flag de estado de transmisión.
 --           TXEn  => ,                      -- Señal de control para solizitar que se escriban datos a la salida.
 --           WRn   => ,                      -- Flag de escritura del dato.
-           RXFn => RXFn,                        -- Señal de control para habilitar que se lean datos.
-           RDn  => temp_RDn,                        -- Flag de lectura del dato.
-           DATA_rx  => OUTPUT_NOW,  -- Dato recibido.
-           POP_RX   => COUNT_END,
-           RX_EMPTY => RX_EMPTY,
-           RX_DONE  => LED(14),
-           ready    => LED(12),
-           RX_FULL  => LED(1)
---           DATA_tx  => SW(15 downto 8) -- Dato a transmitir.
+           --RXFn => RXFn,                        -- Señal de control para habilitar que se lean datos.
+           --RDn  => temp_RDn,                        -- Flag de lectura del dato.
+           --DATA_rx  => OUTPUT_NOW,  -- Dato recibido.
+           --POP_RX   => COUNT_END,
+           --RX_EMPTY => RX_EMPTY,
+           --RX_DONE  => LED(14),
+           --ready    => LED(12),
+           --RX_FULL  => LED(1)
+           TXEn => TXEn,
+           WRn  => WRn,
+           DATA_tx  => SW(15 downto 8), -- Dato a transmitir.
+           PUSH_tx  => tx_push_edge,
+           TX_FULL  => LED(0)
      );
     --- END Instancia FT245 -----
     
@@ -148,7 +154,7 @@ begin
     ----- Triestado de entrada/salida de datos -----
     
     -- DATA <= OUTPUT_DATA when OEn = '1' else (others => 'Z');
-    DATA <= (others => 'Z');
+    -- DATA <= (others => 'Z');
     
     ----- END Triestado de entrada/salida de datos -----
     
@@ -157,9 +163,9 @@ begin
     process
     begin
         wait until rising_edge(CLK);
-        if RX_EMPTY = '0' then
-            DDi(7 downto 0) <= OUTPUT_NOW;
-            OUTPUT_NEXT <= OUTPUT_NOW;
+        if tx_push_edge = '1' then
+            DDi(7 downto 0) <= SW(15 downto 8);
+            OUTPUT_NEXT <= SW(15 downto 8);
         else
             DDi(7 downto 0) <= OUTPUT_NEXT;
         end if;
@@ -182,6 +188,30 @@ begin
     );
     ----- END Instancia display -----
     
+    ----- Instancia DEBOUNCE -----
+    
+      deb_inst : entity work.DEBOUNCE
+       port map (
+        c  => MCLK,
+        r  => RST,
+        sw => BTN(1),  --input
+        db => tx_push_deb   --debounced output
+       );
+
+    
+    ----- END Instancia DEBOUNCE -----
+    
+    ----- Instancia EDGE DETECT -----
+    
+    Edge_inst :entity work.edge_detect
+      port map (
+       c	   => MCLK,
+       level => tx_push_deb, --in
+       tick  => tx_push_edge  --out
+      );
+    
+    ----- END instancia EDGE DETECT -----
+    
     ----- Asingación de salidas -----
     
     OEn <= '1';
@@ -192,5 +222,8 @@ begin
     
     ----- PRUEBAS -----
     RDn <= temp_RDn;
+    LED(15 downto 8) <= SW(15 downto 8);
+    LED(1) <= tx_push_deb;
+    
     
 end Behavioural;
