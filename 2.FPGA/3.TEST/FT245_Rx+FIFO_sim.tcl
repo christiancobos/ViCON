@@ -22,13 +22,15 @@ restart
 # Definición de CLK como reloj con periodo 10ns (100 MHz). Valor inicial -> 0.
 add_force {/FT245/CLK} -radix bin {0 0ns} {1 5ns} -repeat_every 10ns
 
-# Inicialización de todas las señales de entrada a 0.
-add_force {/FT245/reset}  -radix bin {0 0ns}
-add_force {/FT245/DIN}    -radix hex {0 0ns}
-add_force {/FT245/RXFn}   -radix bin {1 0ns}
-add_force {/FT245/POP_RX} -radix bin {0 0ns}
-add_force {/FT245/RDn}    -radix bin {1 0ns}
+# Inicialización de todas las señales de entrada a sus estados iniciales.
+add_force {/FT245/reset}   -radix bin {0 0ns}
+add_force {/FT245/DINOUT}  -radix hex {0 0ns}
+add_force {/FT245/RXFn}    -radix bin {1 0ns}
+add_force {/FT245/POP_RX}  -radix bin {0 0ns}
+add_force {/FT245/mode}    -radix bin {0 0ns}
 
+add_force {/FT245/TXEn}    -radix bin {1 0ns}
+add_force {/FT245/PUSH_TX} -radix bin {0 0ns}
 
 # Ejecuta la simulación por 100ns para estabilizar señales.
 run 100 ns
@@ -47,8 +49,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el primer dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {1 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el primer dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {1 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -65,14 +67,16 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
+run 20 ns
 
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {1 0ns} {0 10ns}
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
 
 # Deja tiempo suficiente para que el sistema complete la lectura y detecte que no hay más datos (6 ciclos de reloj, 60 ns).
-run 60 ns
+run 50 ns
 
 ###########################################################
 
@@ -84,8 +88,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {2 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {2 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -102,13 +106,15 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
-
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {2 0ns} {0 10ns}
-
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
 run 20 ns
+
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
+
+run 50 ns
 
 ###########################################################
 
@@ -120,8 +126,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {3 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {3 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -138,13 +144,15 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
-
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {3 0ns} {0 10ns}
-
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
 run 20 ns
+
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
+
+run 50 ns
 
 ###########################################################
 
@@ -156,8 +164,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {4 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el segundo dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {4 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -174,13 +182,15 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
-
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {4 0ns} {0 10ns}
-
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
 run 20 ns
+
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
+
+run 50 ns
 
 ###########################################################
 
@@ -192,8 +202,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el tercer dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {5 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el tercer dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {5 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -210,13 +220,15 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
-
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {5 0ns} {0 10ns}
-
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
 run 20 ns
+
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
+
+run 50 ns
 
 ###########################################################
 
@@ -251,8 +263,8 @@ run 20 ns
 
 # A este punto, RDn debería haber sido activado automáticamente por la FSM (bajo).
 
-# **Desplazamos DIN 5 ns hacia adelante**, aplicando el tercer dato justo después de RDn.
-add_force {/FT245/DIN} -radix hex {0 0ns} {6 10ns}
+# **Desplazamos DINOUT 5 ns hacia adelante**, aplicando el tercer dato justo después de RDn.
+add_force {/FT245/DINOUT} -radix hex {6 10ns} -cancel 40ns
 
 # Dejamos tiempo para la captura del dato y transición a read_1 (un ciclo de reloj, 10 ns).
 run 10 ns
@@ -269,13 +281,15 @@ run 10 ns
 
 ###########################################################
 
-# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
-add_force {/FT245/RXFn} -radix bin {0 0ns} {1 10ns}
-
-# Borramos el dato en DIN con el mismo retraso con el que lo aplicamos con respecto a RDn.
-add_force {/FT245/DIN} -radix hex {6 0ns} {0 10ns}
-
+# Simulamos el paso de read_3 a wait_for_rd_en (dos ciclos de reloj, 10 ns).
 run 20 ns
+
+###########################################################
+
+# Devolvemos RXFn a su estado de reposo (indicando que no hay más datos disponibles).
+add_force {/FT245/RXFn} -radix bin {1 0ns}
+
+run 50 ns
 
 ###########################################################
 

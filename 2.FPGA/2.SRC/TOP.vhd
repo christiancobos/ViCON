@@ -73,11 +73,10 @@ architecture Behavioural of TOP is
     -- Señales FT245
     signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
     signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
-    signal temp_RDn : STD_LOGIC;
-    signal temp_rx_pop : STD_LOGIC;
-    signal RX_EMPTY: STD_LOGIC;
+    signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
     signal tx_push_deb : STD_LOGIC;
     signal tx_push_edge: STD_LOGIC;
+    signal FT245_MODE: STD_LOGIC;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -103,60 +102,52 @@ begin
     RST <= not LOCKED;            -- Asignación del valor a la señal de reset.
     ----- END Reset global. -----
     
-    ----- Contador FREE RUNNING. -----
-    process (MCLK)
-    begin
-        if rising_edge(MCLK) then
-            if RST = '1' then
-                FREE_COUNTER <= 0;
-                COUNT_END <= '0';
-            elsif FREE_COUNTER = (N - 1) then
-                FREE_COUNTER <= 0;
-                COUNT_END <= '1';  -- Señal que indica el final del ciclo
-            else
-                FREE_COUNTER <= FREE_COUNTER + 1;
-                COUNT_END <= '0';
-            end if;
-        end if;
-    end process;
-    ----- END Contador FREE RUNNING. -----
-    
     --- Instancia FT245 -----
     FT245_inst: entity work.FT245
-    Port map ( 
-           CLK   => MCLK,                      -- Señal de reloj.
-           reset => RST,                      -- Señal de reset.
-           DIN   => DATA,  -- Dato de entrada/salida.
---           wr_en => ,                      -- Señal de control para habilitar escritura.
---           rd_en => ,                       -- Señal de control para habilitar lectura.
---           ready_rx => open,                   -- Flag de estado de recepcion.
---           ready_tx => open,                   -- Flag de estado de transmisión.
---           TXEn  => ,                      -- Señal de control para solizitar que se escriban datos a la salida.
---           WRn   => ,                      -- Flag de escritura del dato.
-           --RXFn => RXFn,                        -- Señal de control para habilitar que se lean datos.
-           --RDn  => temp_RDn,                        -- Flag de lectura del dato.
-           --DATA_rx  => OUTPUT_NOW,  -- Dato recibido.
-           --POP_RX   => COUNT_END,
-           --RX_EMPTY => RX_EMPTY,
-           --RX_DONE  => LED(14),
-           --ready    => LED(12),
-           --RX_FULL  => LED(1)
-           TXEn => TXEn,
-           WRn  => WRn,
-           DATA_tx  => SW(15 downto 8), -- Dato a transmitir.
+    Port map (
+           -- Control básico.
+           CLK      => MCLK,                  -- Señal de reloj.
+           reset    => RST,                   -- Señal de reset.
+           
+           -- Interfaz física FT245.
+           DINOUT   => DATA,                  -- Dato de entrada/salida.
+           TXEn     => TXEn,                  -- Señal de control para solizitar que se escriban datos a la salida.
+           WRn      => WRn,                   -- Flag de escritura del dato.
+           RXFn     => RXFn,                  -- Señal de control para habilitar que se lean datos.
+           RDn      => RDn,              -- Flag de lectura del dato.
+           
+           -- Interfaz de datos hacia cámara 
+           DATA_rx  => OUTPUT_NOW,            -- Dato recibido.
+           DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
+           
+           -- Control 
+           mode     => FT245_MODE,
+           
+           POP_RX   => COUNT_END,
+           RX_EMPTY => RX_EMPTY,
+           
            PUSH_tx  => tx_push_edge,
-           TX_FULL  => LED(0)
+           TX_EMPTY => TX_EMPTY
      );
     --- END Instancia FT245 -----
     
+    ----- Instancia Módulo de control -----
     
+    FSM_inst: entity work.Control_FSM
+    port map (
+           -- Control básico
+           CLK           => MCLK,
+           RST           => RST,
+           
+           -- Entradas de control de FT245.
+           FIFO_RX_EMPTY => RX_EMPTY,
+           FIFO_TX_EMPTY => TX_EMPTY,
+           
+           -- Salidas de control de FT245.
+           FT245_MODE    => FT245_MODE
+    );
     
-    ----- Triestado de entrada/salida de datos -----
-    
-    -- DATA <= OUTPUT_DATA when OEn = '1' else (others => 'Z');
-    -- DATA <= (others => 'Z');
-    
-    ----- END Triestado de entrada/salida de datos -----
+    ----- END Instancia Módulo de control -----
     
     ----- Asignación de señales de Display -----
     
@@ -221,7 +212,6 @@ begin
     
     
     ----- PRUEBAS -----
-    RDn <= temp_RDn;
     LED(15 downto 8) <= SW(15 downto 8);
     LED(1) <= tx_push_deb;
     
