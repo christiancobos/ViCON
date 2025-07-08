@@ -23,10 +23,14 @@ restart
 add_force {/FT245/CLK} -radix bin {0 0ns} {1 5ns} -repeat_every 10ns
 
 # Inicialización de todas las señales de entrada a 0.
-add_force {/FT245/reset}  -radix bin {0 0ns}
-add_force {/FT245/TXEn}   -radix bin {1 0ns}
+add_force {/FT245/reset}   -radix bin {0 0ns}
+add_force {/FT245/TXEn}    -radix bin {1 0ns}
 add_force {/FT245/DATA_tx} -radix hex {0 0ns}
 add_force {/FT245/PUSH_tx} -radix bin {0 0ns}
+add_force {/FT245/mode}    -radix bin {1 0ns}
+
+add_force {/FT245/RXFn}    -radix bin {1 0ns}
+add_force {/FT245/POP_RX}  -radix bin {0 0ns}
 
 # Ejecuta la simulación por 100ns para estabilizar señales.
 run 100 ns
