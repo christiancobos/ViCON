@@ -65,10 +65,20 @@ architecture Behavioural of TOP is
     
     -- Señales FT245
     signal OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
-    signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
+    signal RX_EMPTY, TX_EMPTY, TX_FULL: STD_LOGIC;
     signal tx_push_deb : STD_LOGIC;
     signal tx_push_edge: STD_LOGIC;
     signal FT245_MODE: STD_LOGIC;
+    signal RX_POP    : STD_LOGIC;
+    
+    -- Señales para contador 8 bits
+    signal counter        : UNSIGNED(7 downto 0) := (others => '0');
+    signal counter_enable : STD_LOGIC := '0';
+    signal enviado        : STD_LOGIC := '0';
+    type state_type is (IDLE, LOAD, WAITING, PUSH);
+    signal state : state_type := IDLE;
+    signal data_reg : STD_LOGIC_VECTOR(7 downto 0);
+    
     
 begin
 
@@ -107,20 +117,21 @@ begin
            TXEn     => TXEn,                  -- Señal de control para solizitar que se escriban datos a la salida.
            WRn      => WRn,                   -- Flag de escritura del dato.
            RXFn     => RXFn,                  -- Señal de control para habilitar que se lean datos.
-           RDn      => RDn,              -- Flag de lectura del dato.
+           RDn      => RDn,                   -- Flag de lectura del dato.
            
            -- Interfaz de datos hacia cámara 
            DATA_rx  => OUTPUT_NOW,            -- Dato recibido.
-           DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
+           DATA_tx  => data_reg,              -- Dato a transmitir
            
            -- Control 
-           mode     => '0',
+           mode     => '1',
            
-           POP_RX   => open,
+           POP_RX   => RX_POP,
            RX_EMPTY => RX_EMPTY,
            
-           PUSH_tx  => open,
-           TX_EMPTY => TX_EMPTY
+           PUSH_tx  => counter_enable,
+           TX_EMPTY => TX_EMPTY,
+           TX_FULL  => TX_FULL
      );
     --- END Instancia FT245 -----
     
@@ -160,30 +171,6 @@ begin
     );
     ----- END Instancia display -----
     
-    ----- Instancia DEBOUNCE -----
-    
-      deb_inst : entity work.DEBOUNCE
-       port map (
-        c  => MCLK,
-        r  => RST,
-        sw => BTN(1),  --input
-        db => tx_push_deb   --debounced output
-       );
-
-    
-    ----- END Instancia DEBOUNCE -----
-    
-    ----- Instancia EDGE DETECT -----
-    
-    Edge_inst :entity work.edge_detect
-      port map (
-       c	   => MCLK,
-       level => tx_push_deb, --in
-       tick  => tx_push_edge  --out
-      );
-    
-    ----- END instancia EDGE DETECT -----
-    
     ----- Asingación de salidas -----
     
     OEn <= '1';
@@ -191,6 +178,35 @@ begin
     SIWUn   <= '1';
     
     ----- END Asignación de salidas -----
+    
+    
+    ----- PRUEBAS -----
+    LED(15 downto 8) <= SW(15 downto 8); 
+    LED(7 downto 0)  <= STD_LOGIC_VECTOR(counter);
+    
+    ----- Contador 8 Bits -----
+    
+    process (MCLK)
+    begin
+        if rising_edge(MCLK) then
+            if RST = '1' then
+                data_reg <= (others => '0');
+                counter <= (others => '0');
+                counter_enable <= '0';        
+            elsif counter_enable = '1' then
+                counter_enable <= '0';
+            elsif TX_FULL = '0' then
+                counter_enable <= '1';
+                counter <= counter + 1;
+                data_reg <= STD_LOGIC_VECTOR(counter);            
+            else
+                counter_enable <= '0';
+            end if;
+        
+        end if;
+    end process;
+
+    ----- END Contador 8 Bits -----
     
     
 end Behavioural;

@@ -76,7 +76,8 @@ entity FT245 is
            RX_EMPTY : out STD_LOGIC;                        -- Flag de FIFO de recepción vacía.
            
            PUSH_TX  : in STD_LOGIC;                         -- Flag de recepción de dato a transmitir.x
-           TX_EMPTY  : out STD_LOGIC                         -- Flag de FIFO de transmisión llena.
+           TX_EMPTY : out STD_LOGIC;                        -- Flag de FIFO de transmisión llena.
+           TX_FULL  : out STD_LOGIC                         
            );
 end FT245;
 
@@ -186,6 +187,7 @@ begin
     ----- Conexión salidas -----
     
     TX_EMPTY <= fifo_tx_empty;
+    TX_FULL  <= fifo_tx_full;
     
     ----- END Conexión salidas -----
 

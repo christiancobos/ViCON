@@ -144,9 +144,9 @@ begin
             when write_2 =>
                 -- Segundo ciclo de escritura
                 state_next <= write_3;
-                
+            
             when write_3 =>
-                -- Tercer ciclo de escritura
+                -- Segundo ciclo de escritura
                 state_next <= write_4;
                 
             when write_4 =>
