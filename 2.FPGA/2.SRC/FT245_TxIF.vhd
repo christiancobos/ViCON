@@ -54,7 +54,7 @@ architecture Behavioral of FT245_TxIF is
     alias  sync_TXEn: STD_LOGIC is r_reg(0);                                       -- Alias para valor sincronizado del TXen.
 
     -- Tipo y señales de los estados de la FSM.
-    type STATES is (idle, wait_for_TXE, output_data, write_1, write_2, write_3);
+    type STATES is (idle, wait_for_TXE, output_data, write_1, write_2, write_3, write_4);
     signal state_reg, state_next: STATES;
     
     -- Señales para salidas registradas de la interfaz
@@ -146,6 +146,10 @@ begin
                 state_next <= write_3;
                 
             when write_3 =>
+                -- Tercer ciclo de escritura
+                state_next <= write_4;
+                
+            when write_4 =>
                 -- Tercer y último ciclo de escritura
                 WRn_next   <= '1';
                 TX_DONE_NEXT <= '1';            -- Se indica a la FIFO que proporcione nuevo dato.

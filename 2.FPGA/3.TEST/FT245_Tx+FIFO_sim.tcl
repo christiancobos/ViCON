@@ -67,8 +67,12 @@ run 10 ns
 # Continúa la simulación 10ns.
 run 10 ns
 
-
 # Paso de write_2 a write_3.
+
+# Continúa la simulación 10ns.
+run 10 ns
+
+# Paso de write_3 a write_4.
 
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245/TXEn} -radix bin {1 0ns}
@@ -76,7 +80,7 @@ add_force {/FT245/TXEn} -radix bin {1 0ns}
 # Continúa la simulación 10ns.
 run 10 ns
 
-# Paso de write_3 a idle y tiempo de reposo.
+# Paso de write_4 a idle y tiempo de reposo.
 
 # Continúa la simulación 30ns.
 run 30 ns
@@ -142,13 +146,18 @@ run 10 ns
 
 # Paso de write_2 a write_3.
 
+# Continúa la simulación 10ns.
+run 10 ns
+
+# Paso de write_3 a write_4.
+
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245/TXEn} -radix bin {1 0ns}
 
 # Continúa la simulación 10ns.
 run 10 ns
 
-# Paso de write_3 a idle y tiempo de reposo.
+# Paso de write_4 a idle y tiempo de reposo.
 
 # Continúa la simulación 30ns.
 run 30 ns
@@ -177,13 +186,18 @@ run 10 ns
 
 # Paso de write_2 a write_3.
 
+# Continúa la simulación 10ns.
+run 10 ns
+
+# Paso de write_3 a write_4.
+
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245/TXEn} -radix bin {1 0ns}
 
 # Continúa la simulación 10ns.
 run 10 ns
 
-# Paso de write_3 a idle y tiempo de reposo.
+# Paso de write_4 a idle y tiempo de reposo.
 
 # Continúa la simulación 30ns.
 run 30 ns
@@ -212,13 +226,18 @@ run 10 ns
 
 # Paso de write_2 a write_3.
 
+# Continúa la simulación 10ns.
+run 10 ns
+
+# Paso de write_3 a write_4.
+
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245/TXEn} -radix bin {1 0ns}
 
 # Continúa la simulación 10ns.
 run 10 ns
 
-# Paso de write_3 a idle y tiempo de reposo.
+# Paso de write_4 a idle y tiempo de reposo.
 
 # Continúa la simulación 30ns.
 run 30 ns
