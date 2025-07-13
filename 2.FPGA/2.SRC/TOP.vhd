@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --  Autor:       Christian Diego Cobos Marcos
 --  DNI:         77438323Z
---  Fecha:       16/07/2025
---  Curso:       MSEEI 2024-2025
---  Descripción: ViCON - TOP
+--  Fecha:       16/01/2024
+--  Curso:       MSEEI 2023-2024
+--  Descripción: EF31 - FT245
 --------------------------------------------------------------------------------
 
 library IEEE;
@@ -64,12 +64,17 @@ architecture Behavioural of TOP is
     signal DPi: STD_LOGIC_VECTOR (3 downto 0);
     
     -- Señales FT245
-    signal OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
+    signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
+    signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
     signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
     signal tx_push_deb : STD_LOGIC;
     signal tx_push_edge: STD_LOGIC;
     signal FT245_MODE: STD_LOGIC;
     
+    -- Prueba Rx
+    signal POP_Rx_Test : STD_LOGIC;
+    type STATES is (idle, pop);
+    signal rx_control : STATES := idle;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -116,10 +121,10 @@ begin
            -- Control 
            mode     => '0',
            
-           POP_RX   => open,
+           POP_RX   => POP_Rx_Test,
            RX_EMPTY => RX_EMPTY,
            
-           PUSH_tx  => open,
+           PUSH_tx  => tx_push_edge,
            TX_EMPTY => TX_EMPTY
      );
     --- END Instancia FT245 -----
@@ -144,7 +149,34 @@ begin
     
     ----- Asignación de señales de Display -----
     
-    DDi(15 downto 0) <= (others => '0'); 
+    process(MCLK, RST)
+    begin
+        if RST = '1' then
+            POP_RX_test <= '0';
+            rx_control <= idle;
+        elsif MCLK'event and MCLK = '1' then
+            POP_RX_test <= '0';
+            
+            case rx_control is
+                when idle =>
+                    if RX_EMPTY = '0' then
+                        OUTPUT_NEXT <= OUTPUT_NOW;
+                        rx_control <= pop;
+                     end if;
+                 when pop =>
+                    POP_RX_test <= '1';
+                    rx_control  <= idle;
+                when others =>
+                    rx_control <= idle;
+                    POP_RX_test <= '0';
+                    OUTPUT_NEXT <= "11111111";
+            end case;
+        end if;
+    
+    end process;
+    
+    DDi(15 downto 8) <= "00000000";
+    DDi(7 downto 0)  <= OUTPUT_NEXT;
     DPi <= (others => '1');
     
     ----- END Asignación de señales de Display -----
