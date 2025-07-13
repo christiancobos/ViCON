@@ -1,6 +1,6 @@
 #include <windows.h>
 #include <iostream>
-#include "./Includes/FTD2XX.h"  // Incluye la librería D2XX de FTDI
+#include "./Includes/FTD2XX.H"  // Incluye la librería D2XX de FTDI
 
 int main(void)
 {
@@ -18,20 +18,6 @@ int main(void)
         return 1;
     }
 
-    FT_ResetDevice(ftHandle);
-
-    UCHAR bitMode;
-
-    ftStatus = FT_GetBitMode(ftHandle, &bitMode);
-    if (ftStatus != FT_OK) {
-        std::cerr << "Error al obtener el bit mode del dispositivo" << std::endl;
-        FT_Close(ftHandle);
-        return 1;
-    }
-
-    // 3. Imprimir el bit mode en hexadecimal
-    std::cout << "Bit mode actual: 0x" << std::hex << static_cast<int>(bitMode) << std::endl;
-
     // Bucle infinito para enviar y recibir datos
     while (communicationOK) {
         // Enviar el byte actual a la FPGA
@@ -44,7 +30,7 @@ int main(void)
 
         printf ("Enviado byte: %x\n", (int)txByte);
 
-        // Esperamos 1 segundo antes de volver a leer
+        // Esperamos 1 segundo antes de volver a enviar
         Sleep(1000);  // Esperar 1 segundo (1000 ms)
 
         // Incrementar el byte a enviar y manejar el desbordamiento

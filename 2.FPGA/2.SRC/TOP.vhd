@@ -19,9 +19,6 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity TOP is
-    Generic (
-              N : NATURAL := 2000000                     -- Final de cuenta para contador FREE COUNTER. (Ajustado a 40 milisegundos)
-             );
              
     Port ( CLK     : in    STD_LOGIC;                       -- Señal de reloj.
            SW      : in    STD_LOGIC_VECTOR (15 downto 0);  -- Switches. (15 izquierda --> 0 derecha)
@@ -66,10 +63,6 @@ architecture Behavioural of TOP is
     signal DDi: STD_LOGIC_VECTOR (15 downto 0);
     signal DPi: STD_LOGIC_VECTOR (3 downto 0);
     
-    -- Señal para free counter.
-    signal FREE_COUNTER: NATURAL range 0 to N-1;        -- Valor de la cuenta.
-    signal COUNT_END:    STD_LOGIC;      -- Flag de final de cuenta, habilitará el contador BCD.
-    
     -- Señales FT245
     signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
     signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
@@ -77,6 +70,11 @@ architecture Behavioural of TOP is
     signal tx_push_deb : STD_LOGIC;
     signal tx_push_edge: STD_LOGIC;
     signal FT245_MODE: STD_LOGIC;
+    
+    -- Prueba Rx
+    signal POP_Rx_Test : STD_LOGIC;
+    type STATES is (idle, pop);
+    signal rx_control : STATES := idle;
 begin
 
    -------------------------------------------------------------------------------------------------
@@ -121,9 +119,9 @@ begin
            DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
            
            -- Control 
-           mode     => FT245_MODE,
+           mode     => '0',
            
-           POP_RX   => COUNT_END,
+           POP_RX   => POP_Rx_Test,
            RX_EMPTY => RX_EMPTY,
            
            PUSH_tx  => tx_push_edge,
@@ -151,20 +149,35 @@ begin
     
     ----- Asignación de señales de Display -----
     
-    process
+    process(MCLK, RST)
     begin
-        wait until rising_edge(CLK);
-        if tx_push_edge = '1' then
-            DDi(7 downto 0) <= SW(15 downto 8);
-            OUTPUT_NEXT <= SW(15 downto 8);
-        else
-            DDi(7 downto 0) <= OUTPUT_NEXT;
+        if RST = '1' then
+            POP_RX_test <= '0';
+            rx_control <= idle;
+        elsif MCLK'event and MCLK = '1' then
+            POP_RX_test <= '0';
+            
+            case rx_control is
+                when idle =>
+                    if RX_EMPTY = '0' then
+                        OUTPUT_NEXT <= OUTPUT_NOW;
+                        rx_control <= pop;
+                     end if;
+                 when pop =>
+                    POP_RX_test <= '1';
+                    rx_control  <= idle;
+                when others =>
+                    rx_control <= idle;
+                    POP_RX_test <= '0';
+                    OUTPUT_NEXT <= "11111111";
+            end case;
         end if;
-        
-    end process;
-    DDi(15 downto 8) <= "00000000";
-    DPi <= (others => '1');
     
+    end process;
+    
+    DDi(15 downto 8) <= "00000000";
+    DDi(7 downto 0)  <= OUTPUT_NEXT;
+    DPi <= (others => '1');
     
     ----- END Asignación de señales de Display -----
     
@@ -209,11 +222,6 @@ begin
     PWRSAVn <= '1';
     
     ----- END Asignación de salidas -----
-    
-    
-    ----- PRUEBAS -----
-    LED(15 downto 8) <= SW(15 downto 8);
-    LED(1) <= tx_push_deb;
     
     
 end Behavioural;
