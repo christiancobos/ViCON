@@ -82,7 +82,7 @@ end process;
 
 ----- Next State Logic -----
 
-process (state_reg, mode_reg, fifo_rx_empty, fifo_tx_empty)
+process (state_reg, mode_reg, FIFO_TX_EMPTY)
 begin
 
     -- Asignaciones por defecto para evitar latches.
@@ -94,7 +94,7 @@ begin
         when read_enable =>
             mode_next <= '0';
             
-            if fifo_rx_empty = '0' then
+            if fifo_tx_empty = '0' then
                 state_next <= write_enable;
             end if;
         

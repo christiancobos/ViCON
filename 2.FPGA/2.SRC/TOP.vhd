@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --  Autor:       Christian Diego Cobos Marcos
 --  DNI:         77438323Z
---  Fecha:       16/07/2025
---  Curso:       MSEEI 2024-2025
---  Descripción: ViCON - TOP
+--  Fecha:       16/01/2024
+--  Curso:       MSEEI 2023-2024
+--  Descripción: EF31 - FT245
 --------------------------------------------------------------------------------
 
 library IEEE;
@@ -19,6 +19,9 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity TOP is
+    Generic (
+              N : NATURAL := 256                     -- Final de cuenta para contador FREE COUNTER. (Ajustado a 40 milisegundos)
+             );
              
     Port ( CLK     : in    STD_LOGIC;                       -- Señal de reloj.
            SW      : in    STD_LOGIC_VECTOR (15 downto 0);  -- Switches. (15 izquierda --> 0 derecha)
@@ -63,12 +66,27 @@ architecture Behavioural of TOP is
     signal DDi: STD_LOGIC_VECTOR (15 downto 0);
     signal DPi: STD_LOGIC_VECTOR (3 downto 0);
     
+    -- Señal para free counter.
+    signal FREE_COUNTER: NATURAL range 0 to N-1;        -- Valor de la cuenta.
+    signal COUNT_END:    STD_LOGIC;      -- Flag de final de cuenta, habilitará el contador BCD.
+    
     -- Señales FT245
-    signal OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
+    signal OUTPUT_DATA, OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
+    signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
     signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
-    signal tx_push_deb : STD_LOGIC;
-    signal tx_push_edge: STD_LOGIC;
     signal FT245_MODE: STD_LOGIC;
+    
+    -- Prueba
+    signal RX_POP  : STD_LOGIC;
+    signal TX_PUSH : STD_LOGIC;
+    signal TEST_DATA : STD_LOGIC_VECTOR (7 downto 0);
+    signal TEST_MODE : STD_LOGIC;
+    
+    type STATE_TYPE is (IDLE, RX_READ, RX_POOP, TX_MODE, TX_PUUSH);
+    signal main_state : STATE_TYPE := IDLE;
+    
+    signal data_buffer : STD_LOGIC_VECTOR(7 downto 0);  -- Para almacenar TEST_DATA
+    signal DATA_TO_SHOW : STD_LOGIC_VECTOR(7 downto 0); 
     
 begin
 
@@ -110,16 +128,16 @@ begin
            RDn      => RDn,              -- Flag de lectura del dato.
            
            -- Interfaz de datos hacia cámara 
-           DATA_rx  => OUTPUT_NOW,            -- Dato recibido.
-           DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
+           DATA_rx  => TEST_DATA,            -- Dato recibido.
+           DATA_tx  => data_buffer,       -- Dato a transmitir
            
            -- Control 
-           mode     => '0',
+           mode     => FT245_MODE,
            
-           POP_RX   => open,
+           POP_RX   => RX_POP,
            RX_EMPTY => RX_EMPTY,
            
-           PUSH_tx  => open,
+           PUSH_tx  => TX_PUSH,
            TX_EMPTY => TX_EMPTY
      );
     --- END Instancia FT245 -----
@@ -144,8 +162,67 @@ begin
     
     ----- Asignación de señales de Display -----
     
-    DDi(15 downto 0) <= (others => '0'); 
+    process(MCLK, RST)
+    begin
+        if RST = '1' then
+            main_state     <= IDLE;
+            RX_POP         <= '0';
+            TX_PUSH        <= '0';
+            DATA_TO_SHOW   <= (others => '0');
+            data_buffer    <= (others => '0');
+    
+        elsif rising_edge(MCLK) then
+            -- Pulso por defecto
+            RX_POP  <= '0';
+            TX_PUSH <= '0';
+    
+            case main_state is
+    
+                when IDLE =>
+                    if RX_EMPTY = '0' then
+                        main_state <= RX_READ;
+                    end if;
+    
+                when RX_READ =>
+                    data_buffer  <= TEST_DATA;         -- Capturar dato
+                    DATA_TO_SHOW <= TEST_DATA;         -- Mostrarlo
+                    main_state   <= RX_POOP;
+    
+                when RX_POOP =>
+                    RX_POP      <= '1';                -- Pulso para consumir dato
+                    main_state  <= TX_MODE;
+    
+                when TX_MODE =>
+                    if TX_EMPTY = '1' then             -- FIFO TX disponible
+                        main_state <= TX_PUUSH;
+                    end if;
+    
+                when TX_PUUSH =>
+                    TX_PUSH    <= '1';                 -- Pulso para enviar
+                    main_state <= IDLE;
+    
+                when others =>
+                    main_state <= IDLE;
+    
+            end case;
+        end if;
+    end process;
+    
+    process(MCLK)
+    begin
+        if rising_edge(MCLK) then
+            if (TX_PUSH = '1') then
+                FREE_COUNTER <= FREE_COUNTER + 1;
+            end if;
+        end if;    
+    end process;
+
+    DDi(15 downto 8) <= std_logic_vector(to_unsigned(FREE_COUNTER, 8));
+    DDI(7 downto 0) <= DATA_TO_SHOW;
+    LED(0) <= FT245_MODE;
+    LED(1) <= not TX_EMPTY;
     DPi <= (others => '1');
+    
     
     ----- END Asignación de señales de Display -----
     
@@ -160,37 +237,16 @@ begin
     );
     ----- END Instancia display -----
     
-    ----- Instancia DEBOUNCE -----
-    
-      deb_inst : entity work.DEBOUNCE
-       port map (
-        c  => MCLK,
-        r  => RST,
-        sw => BTN(1),  --input
-        db => tx_push_deb   --debounced output
-       );
-
-    
-    ----- END Instancia DEBOUNCE -----
-    
-    ----- Instancia EDGE DETECT -----
-    
-    Edge_inst :entity work.edge_detect
-      port map (
-       c	   => MCLK,
-       level => tx_push_deb, --in
-       tick  => tx_push_edge  --out
-      );
-    
-    ----- END instancia EDGE DETECT -----
-    
     ----- Asingación de salidas -----
     
     OEn <= '1';
     PWRSAVn <= '1';
-    SIWUn   <= '1';
     
     ----- END Asignación de salidas -----
     
+    -- Prueba
+    --TX_PUSH <= not RX_EMPTY;
+    --RX_POP <= not RX_EMPTY;
+    TEST_MODE <= not TX_EMPTY;
     
 end Behavioural;
