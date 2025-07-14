@@ -122,4 +122,10 @@ FT245_MODE <= mode_reg;
 
 ----- END Output Logic -----
 
+----- Output Logic -----
+
+FT245_MODE <= mode_reg;
+
+----- END Output Logic -----
+
 end Behavioral;

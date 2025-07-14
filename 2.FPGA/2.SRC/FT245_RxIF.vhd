@@ -55,7 +55,7 @@ architecture Behavioral of FT245_RxIF is
     alias  sync_RXFn: STD_LOGIC is r_reg(0);     
     
     -- Tipo y señales de los estados de la FSM.
-    type STATES is (idle, wait_for_RXF, read_1, read_2, read_3, read_4, wait_for_fifo_update, wait_for_rd_en, wait_for_not_RXF);
+    type STATES is (idle, wait_for_RXF, read_1, read_2, read_3, wait_for_fifo_update, wait_for_rd_en, wait_for_not_RXF);
     signal state_reg, state_next: STATES;
     
     -- Señales para salidas registradas de la interfaz
@@ -139,12 +139,8 @@ begin
             when read_2 =>
                 -- Segundo ciclo de lectura del dato (mismo proceso que read_1)
                 state_next <= read_3;
-    
-            when read_3 =>
-                -- Segundo ciclo de lectura del dato (mismo proceso que read_1)
-                state_next <= read_4;
                 
-            when read_4 =>
+            when read_3 =>
                 -- Tercer ciclo delectura del dato, realiza lectura y vuelve al estado inicial
                 RDn_next     <= '1';  -- Termina la lectura (RDn en alto)
                 DATA_next    <= DIN;  -- Lectura del dato

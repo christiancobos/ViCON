@@ -221,6 +221,9 @@ begin
     DDI(7 downto 0) <= DATA_TO_SHOW;
     LED(0) <= FT245_MODE;
     LED(1) <= not TX_EMPTY;
+    DDI(7 downto 0) <= DATA_TO_SHOW;
+    LED(0) <= FT245_MODE;
+    LED(1) <= not TX_EMPTY;
     DPi <= (others => '1');
     
     

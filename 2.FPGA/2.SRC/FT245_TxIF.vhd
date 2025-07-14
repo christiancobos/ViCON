@@ -151,17 +151,15 @@ begin
                        
             when write_4 =>
             
-                if sync_TXEn = '1' then
-                    -- Cuarto y último ciclo de escritura
-                    WRn_next   <= '1';
-                    TX_DONE_NEXT <= '1';            -- Se indica a la FIFO que proporcione nuevo dato.
-                    
-                    if wr_en = '1' then
-                        state_next <= wait_for_TXE; -- Verifica si hay más datos
-                    else
-                        state_next <= idle;
-                        ready_next <= '1';          -- Se indica que la escritura ha terminado
-                    end if;
+                -- Cuarto y último ciclo de escritura
+                WRn_next   <= '1';
+                TX_DONE_NEXT <= '1';            -- Se indica a la FIFO que proporcione nuevo dato.
+                
+                if wr_en = '1' then
+                    state_next <= wait_for_TXE; -- Verifica si hay más datos
+                else
+                    state_next <= idle;
+                    ready_next <= '1';          -- Se indica que la escritura ha terminado
                 end if;
                     
             end case;
