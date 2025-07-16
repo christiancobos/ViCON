@@ -1,22 +1,10 @@
-----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
--- 
--- Create Date: 02.07.2025 00:53:42
--- Design Name: 
--- Module Name: Control_FSM - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
--- 
--- Dependencies: 
--- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
--- 
-----------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--  Autor:       Christian Diego Cobos Marcos
+--  DNI:         77438323Z
+--  Fecha:       16/07/2025
+--  Curso:       MSEEI 2024-2025
+--  Descripción: ViCON - Control FSM
+--------------------------------------------------------------------------------
 
 
 -------------------------------------------------------------------------------
@@ -94,7 +82,7 @@ end process;
 
 ----- Next State Logic -----
 
-process (state_reg, mode_reg)
+process (state_reg, mode_reg, fifo_rx_empty, fifo_tx_empty)
 begin
 
     -- Asignaciones por defecto para evitar latches.
@@ -126,6 +114,12 @@ begin
 
 end process;
 
------ END Next State Logic -----  
+----- END Next State Logic ----- 
+
+----- Output Logic -----
+
+FT245_MODE <= mode_reg;
+
+----- END Output Logic -----
 
 end Behavioral;

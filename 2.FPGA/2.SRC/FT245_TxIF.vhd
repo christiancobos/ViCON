@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --  Autor:       Christian Diego Cobos Marcos
 --  DNI:         77438323Z
---  Fecha:       16/01/2024
---  Curso:       MSEEI 2023-2024
---  Descripción: EF31 - Ft245-TX
+--  Fecha:       16/07/2025
+--  Curso:       MSEEI 2024-2025
+--  Descripción: ViCON - Ft245 TX interface
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ begin
     
     ----- Next state logic -----
     
-    process(state_reg, ready_reg, WRn_reg, DATA_reg, wr_en, sync_TXEn, DIN)
+    process(state_reg, ready_reg, WRn_reg, DATA_reg, wr_en, sync_TXEn, DIN, TX_DONE_reg)
     begin
         -- Asignación por defecto para evitar latches.
         state_next   <= state_reg;
