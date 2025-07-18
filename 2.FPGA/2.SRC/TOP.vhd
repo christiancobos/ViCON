@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --  Autor:       Christian Diego Cobos Marcos
 --  DNI:         77438323Z
---  Fecha:       16/01/2024
---  Curso:       MSEEI 2023-2024
---  Descripción: EF31 - FT245
+--  Fecha:       16/07/2025
+--  Curso:       MSEEI 2024-2025
+--  Descripción: ViCON - TOP
 --------------------------------------------------------------------------------
 
 library IEEE;
@@ -19,25 +19,22 @@ use IEEE.NUMERIC_STD.ALL;
 --use UNISIM.VComponents.all;
 
 entity TOP is
-    Generic (
-              N : NATURAL := 2000000                     -- Final de cuenta para contador FREE COUNTER. (Ajustado a 40 milisegundos)
-             );
              
     Port ( CLK     : in    STD_LOGIC;                       -- Señal de reloj.
            SW      : in    STD_LOGIC_VECTOR (15 downto 0);  -- Switches. (15 izquierda --> 0 derecha)
            BTN     : in    STD_LOGIC_VECTOR (4  downto 0);  -- Botones. (0 central, 1 superior, 2 izquierda, 3 inferior, 4 derecha)
            LED     : out   STD_LOGIC_VECTOR (15 downto 0);  -- LEDs sobre los switches. (15 izquierda --> 0 derecha)
            CAT     : out   STD_LOGIC_VECTOR (7  downto 0);  -- Cátodos de los segmentos.
-           AN      : out   STD_LOGIC_VECTOR (3  downto 0); -- Ánodos de los dígitos (3 izquierda -->0 derecha).
+           AN      : out   STD_LOGIC_VECTOR (3  downto 0);  -- Ánodos de los dígitos (3 izquierda -->0 derecha).
            DATA    : inout STD_LOGIC_VECTOR (7  downto 0);  -- Datos de entrada/salida de FT245
            RXFn    : in    STD_LOGIC;
            TXEn    : in    STD_LOGIC;
            RDn     : out   STD_LOGIC;
            WRn     : out   STD_LOGIC;
-           OEn     : in    STD_LOGIC;
-           SIWUn   : in    STD_LOGIC;
-           CLKOUT  : out   STD_LOGIC;
-           PWRSAVn : out   STD_LOGIC);
+           OEn     : out   STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
+           SIWUn   : out   STD_LOGIC;                       -- Si se conecta, debe estar fijado a HIGH.
+           CLKOUT  : in    STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
+           PWRSAVn : out   STD_LOGIC);                      -- Si se conecta, debe estar fijado a HIGH.
 end TOP;
 
 architecture Behavioural of TOP is
@@ -66,13 +63,12 @@ architecture Behavioural of TOP is
     signal DDi: STD_LOGIC_VECTOR (15 downto 0);
     signal DPi: STD_LOGIC_VECTOR (3 downto 0);
     
-    -- Señal para free counter.
-    signal FREE_COUNTER: NATURAL range 0 to N-1;        -- Valor de la cuenta.
-    signal COUNT_END:    STD_LOGIC;      -- Flag de final de cuenta, habilitará el contador BCD.
-    
     -- Señales FT245
-    signal OUTPUT_DATA: STD_LOGIC_VECTOR (7 downto 0);
-    signal INPUT_DATA : STD_LOGIC_VECTOR (7 downto 0);
+    signal OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
+    signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
+    signal tx_push_deb : STD_LOGIC;
+    signal tx_push_edge: STD_LOGIC;
+    signal FT245_MODE: STD_LOGIC;
     
 begin
 
@@ -99,85 +95,57 @@ begin
     RST <= not LOCKED;            -- Asignación del valor a la señal de reset.
     ----- END Reset global. -----
     
-    ----- Contador FREE RUNNING. -----
-    process (MCLK)
-    begin
-        if rising_edge(MCLK) then
-            if RST = '1' then
-                FREE_COUNTER <= 0;
-                COUNT_END <= '0';
-            elsif FREE_COUNTER = (N - 1) then
-                FREE_COUNTER <= 0;
-                COUNT_END <= '1';  -- Señal que indica el final del ciclo
-            else
-                FREE_COUNTER <= FREE_COUNTER + 1;
-                COUNT_END <= '0';
-            end if;
-        end if;
-    end process;
-    ----- END Contador FREE RUNNING. -----
-    
     --- Instancia FT245 -----
---    FT245_inst: entity work.FT245
---    Port map ( 
---           CLK   => MCLK,                      -- Señal de reloj.
---           reset => RST,                      -- Señal de reset.
---           DIN   => ,  -- Dato de entrada/salida.
---           wr_en => ,                      -- Señal de control para habilitar escritura.
---           rd_en => ,                       -- Señal de control para habilitar lectura.
---           ready_rx => open,                   -- Flag de estado de recepcion.
---           ready_tx => open,                   -- Flag de estado de transmisión.
---           TXEn  => ,                      -- Señal de control para solizitar que se escriban datos a la salida.
---           WRn   => ,                      -- Flag de escritura del dato.
---           RXFn => ,                        -- Señal de control para habilitar que se lean datos.
---           RDn => open,                        -- Flag de lectura del dato.
---           DATA_rx  => DDi(15 downto 8),  -- Dato recibido.
---           DATA_tx  => SW(15 downto 8) -- Dato a transmitir.
---     );
+    FT245_inst: entity work.FT245
+    Port map (
+           -- Control básico.
+           CLK      => MCLK,                  -- Señal de reloj.
+           reset    => RST,                   -- Señal de reset.
+           
+           -- Interfaz física FT245.
+           DINOUT   => DATA,                  -- Dato de entrada/salida.
+           TXEn     => TXEn,                  -- Señal de control para solizitar que se escriban datos a la salida.
+           WRn      => WRn,                   -- Flag de escritura del dato.
+           RXFn     => RXFn,                  -- Señal de control para habilitar que se lean datos.
+           RDn      => RDn,              -- Flag de lectura del dato.
+           
+           -- Interfaz de datos hacia cámara 
+           DATA_rx  => OUTPUT_NOW,            -- Dato recibido.
+           DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
+           
+           -- Control 
+           mode     => '0',
+           
+           POP_RX   => open,
+           RX_EMPTY => RX_EMPTY,
+           
+           PUSH_tx  => open,
+           TX_EMPTY => TX_EMPTY
+     );
     --- END Instancia FT245 -----
     
-    ----- TX Interface -----
-    FT245_instTx: entity work.FT245_TxIF
-    port map(
-        clk   => MCLK,
-        reset => RST,
-        -- USER IO -----------------------------
-        DIN   => INPUT_DATA, -- i [7:0]
-        wr_en => OEn,         -- i
-        ready => OPEN,        -- o
-        -- FT245-like interface ----------------
-        TXEn  => TXEn,        -- i
-        WRn   => WRn,         -- o
-        DATA  => OUTPUT_DATA          -- o [7:0]
+    ----- Instancia Módulo de control -----
+    
+    FSM_inst: entity work.Control_FSM
+    port map (
+           -- Control básico
+           CLK           => MCLK,
+           RST           => RST,
+           
+           -- Entradas de control de FT245.
+           FIFO_RX_EMPTY => RX_EMPTY,
+           FIFO_TX_EMPTY => TX_EMPTY,
+           
+           -- Salidas de control de FT245.
+           FT245_MODE    => FT245_MODE
     );
-    ----- END TX Interface -----
-
-    ----- RX Interface -----
-    FT245_instRx: entity work.FT245_RxIF
-    port map(
-        clk   => MCLK,
-        reset => RST,
-        -- USER IO -----------------------------
-        DIN   => DATA,        -- i [7:0]
-        rd_en => '1',         -- i
-        ready => open,        -- o
-        -- FT245-like interface ----------------
-        RXFn  => RXFn,        -- i
-        RDn   => RDn,         -- o
-        DATA  => INPUT_DATA   -- o [7:0]
-    );
-    ----- END RX FIFO -----
     
-    ----- Triestado de entrada/salida de datos -----
-    
-    DATA <= OUTPUT_DATA when OEn = '1' else (others => 'Z');
-    
-    ----- END Triestado de entrada/salida de datos -----
+    ----- END Instancia Módulo de control -----
     
     ----- Asignación de señales de Display -----
     
-    DDi <= "00000000" & INPUT_DATA;
-    DPi <= (others => '0');
+    DDi(15 downto 0) <= (others => '0'); 
+    DPi <= (others => '1');
     
     ----- END Asignación de señales de Display -----
     
@@ -191,5 +159,38 @@ begin
     AN  => AN      -- o(3:0)   AN3=izda ... AN00dcha
     );
     ----- END Instancia display -----
+    
+    ----- Instancia DEBOUNCE -----
+    
+      deb_inst : entity work.DEBOUNCE
+       port map (
+        c  => MCLK,
+        r  => RST,
+        sw => BTN(1),  --input
+        db => tx_push_deb   --debounced output
+       );
+
+    
+    ----- END Instancia DEBOUNCE -----
+    
+    ----- Instancia EDGE DETECT -----
+    
+    Edge_inst :entity work.edge_detect
+      port map (
+       c	   => MCLK,
+       level => tx_push_deb, --in
+       tick  => tx_push_edge  --out
+      );
+    
+    ----- END instancia EDGE DETECT -----
+    
+    ----- Asingación de salidas -----
+    
+    OEn <= '1';
+    PWRSAVn <= '1';
+    SIWUn   <= '1';
+    
+    ----- END Asignación de salidas -----
+    
     
 end Behavioural;

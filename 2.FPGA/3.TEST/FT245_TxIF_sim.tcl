@@ -6,7 +6,17 @@
 ##  Descripción: EC34 - FT245 Interface Simulation.
 ###########################################################
 
+# Establecer fichero TOP de simulación.
+
+set_property top FT245_TxIF [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]
+
+# Lanzar simulación.
+
+launch_simulation
+
 # Reinicio de la simulación.
+
 restart
 
 ###########################################################
@@ -53,6 +63,13 @@ run 10 ns
 
 # Paso de write_1 a write_2.
 
+# Continúa la simulación 10ns.
+run 10 ns
+
+###########################################################
+
+# Paso de write_2 a write_3.
+
 # Borramos primer dato.
 add_force {/FT245_TxIF/DIN} -radix hex {0 0ns}
 
@@ -61,7 +78,7 @@ run 10 ns
 
 ###########################################################
 
-# Paso de write_2 a write_3.
+# Paso de write_3 a write_4.
 
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245_TxIF/TXEn} -radix bin {1 0ns}
@@ -71,7 +88,7 @@ run 10 ns
 
 ###########################################################
 
-# Paso de write_3 a idle y tiempo de reposo.
+# Paso de write_4 a idle y tiempo de reposo.
 
 # Continúa la simulación 30ns.
 run 30 ns
@@ -106,7 +123,14 @@ run 10 ns
 
 # Paso de write_1 a write_2.
 
-# Borramos segundo dato.
+# Continúa la simulación 10ns.
+run 10 ns
+
+###########################################################
+
+# Paso de write_2 a write_3.
+
+# Borramos primer dato.
 add_force {/FT245_TxIF/DIN} -radix hex {0 0ns}
 
 # Continúa la simulación 10ns.
@@ -114,7 +138,7 @@ run 10 ns
 
 ###########################################################
 
-# Paso de write_2 a write_3.
+# Paso de write_3 a write_4.
 
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245_TxIF/TXEn} -radix bin {1 0ns}
@@ -144,7 +168,14 @@ run 10 ns
 
 # Paso de write_1 a write_2.
 
-# Borramos segundo dato.
+# Continúa la simulación 10ns.
+run 10 ns
+
+###########################################################
+
+# Paso de write_2 a write_3.
+
+# Borramos primer dato.
 add_force {/FT245_TxIF/DIN} -radix hex {0 0ns}
 
 # Continúa la simulación 10ns.
@@ -152,7 +183,7 @@ run 10 ns
 
 ###########################################################
 
-# Paso de write_2 a write_3.
+# Paso de write_3 a write_4.
 
 # Devolvemos TXEn a su estado de reposo
 add_force {/FT245_TxIF/TXEn} -radix bin {1 0ns}
@@ -162,7 +193,7 @@ run 10 ns
 
 ###########################################################
 
-# Paso de write_3 a idle.
+# Paso de write_4 a idle.
 add_force {/FT245_TxIF/wr_en} -radix bin {0 0ns}
 
 # Continúa la simulación 100ns.
@@ -176,3 +207,7 @@ add_force {/FT245_TxIF/reset} -radix bin {1 0ns} {0 10ns}
 # Continúa la simulación 100ns.
 run 100 ns
 
+###########################################################
+
+set_property top TOP [get_filesets sim_1]
+set_property top_lib xil_defaultlib [get_filesets sim_1]

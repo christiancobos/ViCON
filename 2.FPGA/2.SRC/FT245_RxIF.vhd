@@ -1,9 +1,9 @@
 --------------------------------------------------------------------------------
 --  Autor:       Christian Diego Cobos Marcos
 --  DNI:         77438323Z
---  Fecha:       16/01/2024
---  Curso:       MSEEI 2023-2024
---  Descripción: EF31 - Ft245-RX
+--  Fecha:       16/07/2025
+--  Curso:       MSEEI 2024-2025
+--  Descripción: ViCON - Ft245 RX interface
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -37,14 +37,15 @@ use IEEE.STD_LOGIC_1164.ALL;
 --use UNISIM.VComponents.all;
 
 entity FT245_RxIF is
-    Port ( CLK : in STD_LOGIC;                       -- Señal de reloj.
-           reset : in STD_LOGIC;                     -- Señal de reset.
-           DIN : in STD_LOGIC_VECTOR (7 downto 0);   -- Dato de entrada.
-           rd_en : in STD_LOGIC;                     -- Señal de control para habilitar escritura.
-           ready : out STD_LOGIC;                    -- Flag de estado de escritura.
-           RXFn : in STD_LOGIC;                      -- Señal de control para solizitar que se escriban datos a la salida.
-           RDn : out STD_LOGIC;                      -- Flag de escritura del dato.
-           DATA : out STD_LOGIC_VECTOR (7 downto 0));-- Dato de salida.
+    Port ( CLK          : in STD_LOGIC;                       -- Señal de reloj.
+           reset        : in STD_LOGIC;                       -- Señal de reset.
+           DIN          : in STD_LOGIC_VECTOR (7 downto 0);   -- Dato de entrada.
+           rd_en        : in STD_LOGIC;                       -- Señal de control para habilitar escritura.
+           ready        : out STD_LOGIC;                      -- Flag de estado de escritura.
+           RXFn         : in STD_LOGIC;                       -- Señal de control para solizitar que se escriban datos a la salida.
+           RDn          : out STD_LOGIC;                      -- Flag de escritura del dato.
+           DATA         : out STD_LOGIC_VECTOR (7 downto 0);  -- Dato de salida.
+           RX_DONE_tick : out STD_LOGIC);                     -- Flag de dato disponible para FIFO.
 end FT245_RxIF;
 
 architecture Behavioral of FT245_RxIF is
@@ -54,13 +55,14 @@ architecture Behavioral of FT245_RxIF is
     alias  sync_RXFn: STD_LOGIC is r_reg(0);     
     
     -- Tipo y señales de los estados de la FSM.
-    type STATES is (idle, wait_for_RXF, read_1, read_2, read_3, wait_for_not_RXF);
+    type STATES is (idle, wait_for_RXF, read_1, read_2, read_3, wait_for_fifo_update, wait_for_rd_en, wait_for_not_RXF);
     signal state_reg, state_next: STATES;
     
     -- Señales para salidas registradas de la interfaz
-    signal ready_reg, ready_next: STD_LOGIC                    := '1';             -- Señales para flag "ready". Valor inicial en Idle.
-    signal RDn_reg, RDn_next    : STD_LOGIC                    := '1';             -- Señales para flag de escritura. Valor inicial en Idle.
-    signal DATA_reg, DATA_next  : STD_LOGIC_VECTOR(7 downto 0) := (others => '0'); -- Señales para entrada de datos. Valor inicial en Idle.
+    signal ready_reg, ready_next     : STD_LOGIC                    := '1';             -- Señales para flag "ready". Valor inicial en Idle.
+    signal RDn_reg, RDn_next         : STD_LOGIC                    := '1';             -- Señales para flag de escritura. Valor inicial en Idle.
+    signal DATA_reg, DATA_next       : STD_LOGIC_VECTOR(7 downto 0) := (others => '0'); -- Señales para entrada de datos. Valor inicial en Idle.
+    signal RX_DONE_reg, RX_DONE_next : STD_LOGIC                    := '0';             -- Señales para flag de FIFO. Valor inicial en Idle.
 
 begin
 
@@ -82,15 +84,17 @@ begin
     process(CLK, reset)
     begin
         if reset = '1' then              -- Reset asíncrono.
-            state_reg <= idle;
-            ready_reg <= '1';
-            RDn_reg   <= '1';
-            DATA_reg  <= (others => '0');
+            state_reg   <= idle;
+            ready_reg   <= '1';
+            RDn_reg     <= '1';
+            DATA_reg    <= (others => '0');
+            RX_DONE_reg <= '0';
         elsif CLK'event and CLK='1' then -- Actualización de los estados.
-            state_reg <= state_next;
-            ready_reg <= ready_next;
-            RDn_reg   <= RDn_next;
-            DATA_reg  <= DATA_next;
+            state_reg   <= state_next;
+            ready_reg   <= ready_next;
+            RDn_reg     <= RDn_next;
+            DATA_reg    <= DATA_next;
+            RX_DONE_reg <= RX_DONE_next;
         end if;
         
     end process;
@@ -102,15 +106,19 @@ begin
     process(state_reg, ready_reg, RDn_reg, DATA_reg, rd_en, sync_RXFn, DIN)
     begin
         -- Asignaciones por defecto para evitar latches
-        state_next <= state_reg;
-        ready_next <= ready_reg;
-        RDn_next   <= RDn_reg;
-        DATA_next  <= DATA_reg;
+        state_next   <= state_reg;
+        ready_next   <= ready_reg;
+        RDn_next     <= RDn_reg;
+        DATA_next    <= DATA_reg;
+        RX_DONE_next <= '0';
     
         -- Máquina de estados
         case state_reg is
     
             when idle =>
+                -- Se baja el flag de la FIFO
+                RX_DONE_NEXT <= '0';
+                
                 -- En estado idle, espera habilitación de lectura
                 if rd_en = '1' then
                     state_next <= wait_for_RXF;
@@ -125,19 +133,24 @@ begin
                 end if;
     
             when read_1 =>
-                -- Primera lectura del dato
-                DATA_next  <= DIN;  -- Captura el dato
+                -- Primer ciclo de lectura del dato
                 state_next <= read_2;
     
             when read_2 =>
-                -- Segunda lectura del dato (mismo proceso que read_1)
-                DATA_next  <= DIN;  -- Actualiza con el dato más reciente
+                -- Segundo ciclo de lectura del dato (mismo proceso que read_1)
                 state_next <= read_3;
     
             when read_3 =>
-                -- Tercera lectura del dato, termina lectura y vuelve al estado inicial
-                RDn_next   <= '1';  -- Termina la lectura (RDn en alto)
-                DATA_next  <= DIN;  -- Última lectura del dato
+                -- Tercer ciclo delectura del dato, realiza lectura y vuelve al estado inicial
+                RDn_next     <= '1';  -- Termina la lectura (RDn en alto)
+                DATA_next    <= DIN;  -- Lectura del dato
+                RX_DONE_next <= '1';  -- Flag de lectura realizada para FIFO.
+                state_next <= wait_for_fifo_update;
+                
+            when wait_for_fifo_update =>
+                state_next   <= wait_for_rd_en;
+                
+            when wait_for_rd_en =>                
                 if rd_en = '1' then
                     state_next <= wait_for_not_RXF;  -- Verifica si hay más datos
                 else
@@ -165,9 +178,10 @@ begin
     
     ----- Conexión señales con salidas -----
     
-    ready <= ready_reg;
-    RDn   <= RDn_reg;
-    DATA  <= DATA_reg;
+    ready        <= ready_reg;
+    RDn          <= RDn_reg;
+    DATA         <= DATA_reg;
+    RX_DONE_tick <= RX_DONE_reg;
     
     ----- END Conexión señales con salidas -----
 
