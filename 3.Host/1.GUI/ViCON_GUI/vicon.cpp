@@ -9,7 +9,11 @@ ViCON::ViCON(QWidget *parent)
     setWindowTitle(tr("ViCON: Interfaz de Control y representación de vídeo")); // Título de la ventana
 
     // Configuración de la conexión FT245
-    /* TODO */
+    ftStatus = FT_Open(0, &ftHandle);
+    if (ftStatus != FT_OK)
+    {
+        qDebug() << "Error al abrir el dispositivo FTDI.";
+    }
 
     // Configuración de escena para representación de vídeo.
     scene = new QGraphicsScene(this);

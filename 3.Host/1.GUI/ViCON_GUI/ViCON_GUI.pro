@@ -25,7 +25,9 @@ LIBS += -LC:/opencv-build/x64/mingw/lib \
         -lopencv_highgui4110 \
         -lopencv_imgproc4110 \
         -lopencv_videoio4110 \
-        -lopencv_objdetect4110
+        -lopencv_objdetect4110 \
+        -L$$PWD \
+        -lftd2xx
 
 
 # Default rules for deployment.
