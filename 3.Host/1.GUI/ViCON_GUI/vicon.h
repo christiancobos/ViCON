@@ -14,6 +14,7 @@
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include "FTD2XX.H"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -37,6 +38,10 @@ private slots:
 
 private:
     Ui::ViCON *ui;
+
+    // Gestión del dispositivo FTDI
+    FT_HANDLE ftHandle;
+    FT_STATUS ftStatus;
 
     // Representación de vídeo en pantalla.
     QTimer* videoTimer;
