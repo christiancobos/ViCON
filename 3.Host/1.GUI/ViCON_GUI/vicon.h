@@ -34,7 +34,11 @@ private slots:
 
     void updateFrame();
 
-    void on_inicioVideo_toggled(bool checked);
+    void mostrarImagenSinVideo();
+
+    void on_inicio_clicked(void);
+
+    void on_reconocimiento_toggled(bool checked);
 
 private:
     Ui::ViCON *ui;
@@ -53,5 +57,6 @@ private:
 
     // Flags de control
     bool videoEnable;
+    bool reconocimientoEnable;
 };
 #endif // VICON_H
