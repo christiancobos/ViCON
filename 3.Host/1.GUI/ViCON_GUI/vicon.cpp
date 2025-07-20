@@ -8,32 +8,34 @@ ViCON::ViCON(QWidget *parent)
     ui->setupUi(this);
     setWindowTitle(tr("ViCON: Interfaz de Control y representación de vídeo")); // Título de la ventana
 
-    // Configuración de la conexión FT245
-    ftStatus = FT_Open(0, &ftHandle);
-    if (ftStatus != FT_OK)
-    {
-        qDebug() << "Error al abrir el dispositivo FTDI.";
-    }
-
     // Configuración de escena para representación de vídeo.
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
 
-    // Apertura de fuente de imagen:
-    //cap.open("video.mp4"); // Opción de fuente de vídeo.
-    cap.open(0); //Opción para webcam
+    // Mostrar imagen estática
+    QTimer::singleShot(0, this, [this]() {
+        mostrarImagenSinVideo();
+    });
+
+    // Inicializar estado del botón de inicio.
+    ui->inicio->setStyleSheet(
+        "QPushButton {"
+        " background-color: #e0e0e0;"
+        " color: black;"
+        " border: 2px solid #aaaaaa;"
+        " border-radius: 5px;"
+        " padding: 6px;"
+        " font-weight: normal;"
+        " }"
+        );
 
     // Configuración de timer:
     videoTimer = new QTimer(this);
     connect(videoTimer, &QTimer::timeout, this, &ViCON::updateFrame);
 
-    // Inicializador del clasificador facial.
-    if (!faceCascade.load("haarcascade_frontalface_default.xml")) {
-        qDebug() << "No se pudo cargar el clasificador de rostros.";
-    }
-
     // Configuración de variables globales.
-    videoEnable = false;
+    videoEnable          = false;
+    reconocimientoEnable = false;
 }
 
 ViCON::~ViCON()
@@ -47,12 +49,12 @@ void ViCON::updateFrame()
     cap >> frame;
     if (!frame.empty()) {
         cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        cv::flip(frame, frame, 1); // Espejo horizontal de la imagen.
 
         std::vector<cv::Rect> faces;
         cv::Mat gray;
 
         cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
-        cv::flip(frame, frame, 1); // Espejo horizontal de la imagen.
 
         cv::equalizeHist(gray, gray);  // Mejora contraste
         faceCascade.detectMultiScale(gray, faces, 1.1, 4, 0, cv::Size(30, 30));
@@ -69,17 +71,141 @@ void ViCON::updateFrame()
         ui->graphicsView->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
     } else {
         videoTimer->stop();  // fin del video
-        ui->inicioVideo->setChecked(false);
+        ui->inicio->click();
     }
 }
 
-void ViCON::on_inicioVideo_toggled(bool checked)
+void ViCON::mostrarImagenSinVideo()
 {
-    videoEnable = checked;
+    // 1. Crear imagen negra base
+    int width = 640;
+    int height = 480;
+    cv::Mat noVideoImg(height, width, CV_8UC3, cv::Scalar(0, 0, 0));
 
-    if (checked) {
+    // 2. Texto
+    std::string mensaje = "No video available";
+    int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    double fontScale = 2.0;
+    int thickness = 3;
+
+    // 3. Centrado del texto
+    int baseline = 0;
+    cv::Size textSize = cv::getTextSize(mensaje, fontFace, fontScale, thickness, &baseline);
+    cv::Point textOrg((width - textSize.width) / 2, (height + textSize.height) / 2);
+    cv::putText(noVideoImg, mensaje, textOrg, fontFace, fontScale, cv::Scalar(0, 0, 255), thickness);
+
+    // 4. Convertir a QImage y luego a QPixmap
+    QImage qimg(noVideoImg.data, noVideoImg.cols, noVideoImg.rows, noVideoImg.step, QImage::Format_RGB888);
+    QPixmap pixmap = QPixmap::fromImage(qimg.rgbSwapped());
+
+    // 5. Añadir a escena y escalar con fitInView
+    scene->clear();
+    QGraphicsPixmapItem* item = scene->addPixmap(pixmap);
+    item->setTransformationMode(Qt::SmoothTransformation);
+    scene->setSceneRect(pixmap.rect());
+
+    // 6. Ajuste de vista manteniendo aspecto
+    ui->graphicsView->fitInView(item, Qt::KeepAspectRatio);
+}
+
+void ViCON::on_inicio_clicked(void)
+{
+    if (!videoEnable)
+    {
+        // Configuración de la conexión FT245
+        ftStatus = FT_Open(0, &ftHandle);
+        if (ftStatus != FT_OK)
+        {
+            qDebug() << "Error al abrir el dispositivo FTDI.";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("No se encuentra dispositivo FTDI!");
+            return;
+        }
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Conexión iniciada");
+
+        // TODO: Adaptaciones para usar imágen del FT245
+        // Apertura de fuente de imagen:
+        //cap.open("video.mp4"); // Opción de fuente de vídeo.
+        cap.open(0); //Opción para webcam
+
+        // Inicializador del clasificador facial.
+        if (!faceCascade.load("haarcascade_frontalface_default.xml")) {
+            qDebug() << "No se pudo cargar el clasificador de rostros.";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("Error con el clasificador!");
+            return;
+        }
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Algoritmo cargado");
+
         videoTimer->start(33);  // aprox 30 fps
-    } else {
-        videoTimer->stop();
+        ui->inicio->setStyleSheet(
+            "QPushButton {"
+            " background-color: #28a745;"
+            " color: white;"
+            " border: 2px solid #1e7e34;"
+            " border-radius: 5px;"
+            " padding: 6px;"
+            " font-weight: bold;"
+            " }"
+            );
+
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Detección iniciada!");
     }
+    else
+    {
+        videoTimer->stop();
+
+        // Reemplazamos clasificador por uno vacío.
+        faceCascade = cv::CascadeClassifier();
+
+        // Cerramos la fuente de imagen.
+        cap.release();
+
+        // Mostrar imagen estática
+        mostrarImagenSinVideo();
+
+        // Configuración de la conexión FT245
+        ftStatus = FT_Close(ftHandle);
+        if (ftStatus != FT_OK)
+        {
+            qDebug() << "Error al cerrar el dispositivo FTDI.";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("Error al cerrar el dispositivo FTDI!");
+            return;
+        }
+        ui->estado->setStyleSheet("color: black;");
+        ui->estado->setText("Pendiente de inicio");
+
+        ui->inicio->setStyleSheet(
+            "QPushButton {"
+            " background-color: #e0e0e0;"
+            " color: black;"
+            " border: 2px solid #aaaaaa;"
+            " border-radius: 5px;"
+            " padding: 6px;"
+            " font-weight: normal;"
+            " }"
+            );
+    }
+
+    videoEnable = !videoEnable;
+
+    return;
+}
+
+void ViCON::on_reconocimiento_toggled(bool checked)
+{
+    if (!checked)
+    {
+        // TODO: Habilitar reconocimiento facial.
+    }
+    else
+    {
+        // TODO: Deshabilitar reconocimiento facial.
+    }
+
+    reconocimientoEnable = checked;
 }
