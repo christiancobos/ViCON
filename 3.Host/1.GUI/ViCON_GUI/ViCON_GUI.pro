@@ -26,6 +26,7 @@ LIBS += -LC:/opencv-build/x64/mingw/lib \
         -lopencv_imgproc4110 \
         -lopencv_videoio4110 \
         -lopencv_objdetect4110 \
+        -lopencv_face4110 \
         -L$$PWD \
         -lftd2xx
 
