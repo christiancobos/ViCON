@@ -59,9 +59,38 @@ void ViCON::updateFrame()
         cv::equalizeHist(gray, gray);  // Mejora contraste
         faceCascade.detectMultiScale(gray, faces, 1.1, 4, 0, cv::Size(30, 30));
 
-        for (const auto& face : faces)
+        if (reconocimientoEnable && faceRecognizer)
         {
-            cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
+            for (const auto& face : faces)
+            {
+                cv::Mat faceROI = gray(face);  // recorta la cara del frame en gris
+                cv::Mat resizedFace;
+                cv::resize(faceROI, resizedFace, cv::Size(200, 200));  // normaliza tamaño
+
+                int predictedLabel = -1;
+                double confidence = 0.0;
+
+                faceRecognizer->predict(resizedFace, predictedLabel, confidence);
+
+                std::string labelName = "Desconocido";
+                if (labelToName.find(predictedLabel) != labelToName.end() && confidence < 70.0)
+                {
+                    labelName = labelToName[predictedLabel];
+                }
+
+                // Dibujar nombre encima del rectángulo
+                cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
+                cv::putText(frame, labelName, cv::Point(face.x, face.y - 10),
+                            cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(0, 255, 0), 2);
+            }
+        }
+        else
+        {
+            // Solo dibujar rectángulo si no está activo el reconocimiento
+            for (const auto& face : faces)
+            {
+                cv::rectangle(frame, face, cv::Scalar(0, 255, 0), 2);
+            }
         }
 
         QImage qimg(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_RGB888);
@@ -137,7 +166,37 @@ void ViCON::on_inicio_clicked(void)
             return;
         }
         ui->estado->setStyleSheet("color: green;");
-        ui->estado->setText("Algoritmo cargado");
+        ui->estado->setText("Algoritmo reconocimiento cargado");
+
+        // Cargar modelo de reconocimiento facial
+        faceRecognizer = cv::face::LBPHFaceRecognizer::create();
+        try {
+            faceRecognizer->read("modelo_lbph.xml");
+        } catch (...) {
+            qDebug() << "No se pudo cargar el modelo de reconocimiento.";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("Error cargando modelo LBPH.");
+            return;
+        }
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Reconocimiento de caras cargado");
+
+        // Cargar labels.txt
+        std::ifstream file("labels.txt");
+        if (!file.is_open()) {
+            qDebug() << "No se pudo abrir labels.txt";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("Error cargando etiquetas.");
+            return;
+        }
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Etiquetas cargadas");
+
+        int label;
+        std::string name;
+        while (file >> label >> name) {
+            labelToName[label] = name;
+        }
 
         videoTimer->start(33);  // aprox 30 fps
         ui->inicio->setStyleSheet(
@@ -198,13 +257,29 @@ void ViCON::on_inicio_clicked(void)
 
 void ViCON::on_reconocimiento_toggled(bool checked)
 {
-    if (!checked)
+    if (!reconocimientoEnable)
     {
-        // TODO: Habilitar reconocimiento facial.
+        // Cargar modelo de reconocimiento facial
+        faceRecognizer = cv::face::LBPHFaceRecognizer::create();
+        try {
+            faceRecognizer->read("modelo_lbph.xml");
+        } catch (...) {
+            qDebug() << "No se pudo cargar el modelo de reconocimiento.";
+            ui->estado->setStyleSheet("color: red;");
+            ui->estado->setText("Error cargando modelo LBPH.");
+            return;
+        }
+        ui->estado->setStyleSheet("color: green;");
+        ui->estado->setText("Reconocimiento de caras cargado");
     }
     else
     {
-        // TODO: Deshabilitar reconocimiento facial.
+        // Liberamos el algoritmo de reconocimiento y vaciamos el mapa de etiquetas.
+        faceRecognizer.release();                       // Libera el recognizer
+        labelToName.clear();                            // Vacía el mapa de etiquetas
+
+        ui->estado->setStyleSheet("color: black;");
+        ui->estado->setText("Algoritmo reconocimiento liberado");
     }
 
     reconocimientoEnable = checked;

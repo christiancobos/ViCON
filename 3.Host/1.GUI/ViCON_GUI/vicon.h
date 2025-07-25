@@ -14,6 +14,9 @@
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/face.hpp>
+#include <fstream>
+#include <map>
 #include "FTD2XX.H"
 
 QT_BEGIN_NAMESPACE
@@ -54,6 +57,10 @@ private:
 
     // Clasificador de caras.
     cv::CascadeClassifier faceCascade;
+
+    // Algoritmo de reconocimiento de caras.
+    cv::Ptr<cv::face::LBPHFaceRecognizer> faceRecognizer;
+    std::map<int, std::string> labelToName;
 
     // Flags de control
     bool videoEnable;
