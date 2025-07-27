@@ -20,12 +20,18 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity TOP is
              
-    Port ( CLK     : in    STD_LOGIC;                       -- Señal de reloj.
+    Port ( 
+           -- Reloj
+           CLK     : in    STD_LOGIC;                       -- Señal de reloj.
+           
+           -- Controles de la placa
            SW      : in    STD_LOGIC_VECTOR (15 downto 0);  -- Switches. (15 izquierda --> 0 derecha)
            BTN     : in    STD_LOGIC_VECTOR (4  downto 0);  -- Botones. (0 central, 1 superior, 2 izquierda, 3 inferior, 4 derecha)
            LED     : out   STD_LOGIC_VECTOR (15 downto 0);  -- LEDs sobre los switches. (15 izquierda --> 0 derecha)
            CAT     : out   STD_LOGIC_VECTOR (7  downto 0);  -- Cátodos de los segmentos.
            AN      : out   STD_LOGIC_VECTOR (3  downto 0);  -- Ánodos de los dígitos (3 izquierda -->0 derecha).
+           
+           -- FT245
            DATA    : inout STD_LOGIC_VECTOR (7  downto 0);  -- Datos de entrada/salida de FT245
            RXFn    : in    STD_LOGIC;
            TXEn    : in    STD_LOGIC;
@@ -34,7 +40,18 @@ entity TOP is
            OEn     : out   STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
            SIWUn   : out   STD_LOGIC;                       -- Si se conecta, debe estar fijado a HIGH.
            CLKOUT  : in    STD_LOGIC;                       -- No se usa en el modo FT245 Asíncrono.
-           PWRSAVn : out   STD_LOGIC);                      -- Si se conecta, debe estar fijado a HIGH.
+           PWRSAVn : out   STD_LOGIC;                       -- Si se conecta, debe estar fijado a HIGH.
+           
+           -- MT9V111
+           CAMERA  : in    STD_LOGIC_VECTOR (7 downto 0);   -- Datos provenientes de la cámara.
+           PCLK    : in    STD_LOGIC;                       -- Referencia de reloj para datos recibidos (píxeles).
+           VSYNC   : in    STD_LOGIC;                       -- Referencia de inicio de transmisión de la imágen.
+           HREF    : in    STD_LOGIC;                       -- Referencia de inicio de transmisión de la fila. 
+           XCLK    : out   STD_LOGIC;                       -- Referencia de reloj hacia la cámara.
+           RSTn    : out   STD_LOGIC;                       -- Reset de la cámara.
+           SDA     : out   STD_LOGIC;                       -- Interfaz de configuración de la cámara - Datos.
+           SCL     : out   STD_LOGIC                        -- Interfaz de comunicación de la cámara  - Reloj.
+           );
 end TOP;
 
 architecture Behavioural of TOP is
@@ -45,6 +62,7 @@ architecture Behavioural of TOP is
      (
           -- Clock out ports
           clk_out1          : out    std_logic;  -- Salida de reloj.
+          clk_out2          : out    std_logic;  -- Salida de reloj.
           -- Status and control signals
           reset             : in     std_logic;  -- Señal de reset.
           locked            : out    std_logic;  -- Flag de indicación de la estabilidad.
@@ -53,28 +71,29 @@ architecture Behavioural of TOP is
      );
     end component;
 
-    -- Señales MMCM
-    signal MCLK:    STD_LOGIC;           -- Señal de reloj a 50 MHz.
-    signal LOCKED:  STD_LOGIC;           -- Indica que la señal de reloj es estable.
-    alias  CLK_RST: STD_LOGIC is BTN(0); -- La señal de reset del reloj se genera con el botón central.
-    signal RST:     STD_LOGIC;           -- Señal de reset generada a partir de LOCKED.
+    -- Señales MMCM.
+    signal MCLK    : STD_LOGIC;           -- Señal de reloj a 100 MHz.
+    signal PIXCLK  : STD_LOGIC;           -- Señal de reloj de cámara a 12 MHz
+    signal LOCKED  : STD_LOGIC;           -- Indica que la señal de reloj es estable.
+    alias  CLK_RST : STD_LOGIC is BTN(0); -- La señal de reset del reloj se genera con el botón central.
+    signal RST     : STD_LOGIC;           -- Señal de reset generada a partir de LOCKED.
 
-    -- Señales display
-    signal DDi: STD_LOGIC_VECTOR (15 downto 0);
-    signal DPi: STD_LOGIC_VECTOR (3 downto 0);
+    -- Señales display.
+    signal DDi : STD_LOGIC_VECTOR (15 downto 0);
+    signal DPi : STD_LOGIC_VECTOR (3 downto 0);
     
-    -- Señales FT245
-    signal OUTPUT_NEXT, OUTPUT_NOW: STD_LOGIC_VECTOR (7 downto 0);
-    signal RX_EMPTY, TX_EMPTY: STD_LOGIC;
-    signal tx_push_deb : STD_LOGIC;
-    signal tx_push_edge: STD_LOGIC;
-    signal FT245_MODE: STD_LOGIC;
+    -- Señales FT245.
+    signal VALUE_RX, VALUE_TX : STD_LOGIC_VECTOR (7 downto 0);
+    signal RX_EMPTY, TX_EMPTY : STD_LOGIC;
+    signal PUSH_TX, POP_RX    : STD_LOGIC;
+    signal FT245_MODE         : STD_LOGIC;
     
+    -- Señales FSM.
+    signal FRAME_REQUEST : STD_LOGIC;
+    
+    -- Señales cámara.
+    signal FRAME_END : STD_LOGIC;
 begin
-
-   -------------------------------------------------------------------------------------------------
-   -------------------------------------------INCOMPLETO--------------------------------------------
-   -------------------------------------------------------------------------------------------------
 
     -- MODULOS
     
@@ -83,8 +102,11 @@ begin
     port map ( 
         -- Clock in ports
         clk_in1  => CLK,      -- Señal de reloj del oscilador.
+        
         -- Clock out ports  
-        clk_out1 => MCLK,     -- Salida a 50 MHz.
+        clk_out1 => MCLK,     -- Reloj maestro   a 100 MHz.
+        clk_out2 => PIXCLK,   -- Reloj de cámara a 12 MHz.
+        
         -- Status and control signals                
         reset    => CLK_RST,  -- Reset (BTN(0)).
         locked   => LOCKED    -- Señal de indicación de salida estable (1-estable; 0-inestable).
@@ -107,19 +129,19 @@ begin
            TXEn     => TXEn,                  -- Señal de control para solizitar que se escriban datos a la salida.
            WRn      => WRn,                   -- Flag de escritura del dato.
            RXFn     => RXFn,                  -- Señal de control para habilitar que se lean datos.
-           RDn      => RDn,              -- Flag de lectura del dato.
+           RDn      => RDn,                   -- Flag de lectura del dato.
            
            -- Interfaz de datos hacia cámara 
-           DATA_rx  => OUTPUT_NOW,            -- Dato recibido.
-           DATA_tx  => SW(15 downto 8),       -- Dato a transmitir
+           DATA_rx  => VALUE_RX,              -- Dato recibido.
+           DATA_tx  => VALUE_TX,              -- Dato a transmitir
            
            -- Control 
-           mode     => '0',
+           mode     => FT245_MODE,
            
-           POP_RX   => open,
+           POP_RX   => POP_RX,
            RX_EMPTY => RX_EMPTY,
            
-           PUSH_tx  => open,
+           PUSH_TX  => PUSH_TX,
            TX_EMPTY => TX_EMPTY
      );
     --- END Instancia FT245 -----
@@ -135,19 +157,41 @@ begin
            -- Entradas de control de FT245.
            FIFO_RX_EMPTY => RX_EMPTY,
            FIFO_TX_EMPTY => TX_EMPTY,
+           FIFO_RX_VALUE => VALUE_RX,
+           
+           -- Entradas de control de cámara
+           FRAME_END     => FRAME_END,
            
            -- Salidas de control de FT245.
-           FT245_MODE    => FT245_MODE
+           FT245_MODE    => FT245_MODE,
+           FIFO_RX_POP   => POP_RX,
+           
+           -- Salidas de control de cámara.
+           REQUEST_IMAGE => FRAME_REQUEST
     );
     
     ----- END Instancia Módulo de control -----
     
-    ----- Asignación de señales de Display -----
+    ----- Instancia módulo cámara -----
     
-    DDi(15 downto 0) <= (others => '0'); 
-    DPi <= (others => '1');
+     CAMERA_inst: entity work.camera
+     port map(
+      CLK           => MCLK,
+      reset         => RST,
+      -- Inputs from camera ------------------
+      DATA_IN       => CAMERA,        -- i [7:0]
+      FRAME_VALID   => VSYNC,         -- i
+      LINE_VALID    => HREF,          -- i
+      PIXCLK        => PCLK,          -- i
+      -- Inputs from FPGA --------------------
+      IMAGE_REQUEST => FRAME_REQUEST, -- i
+      -- Outputs to FPGA ---------------------
+      DATA_OUT      => VALUE_TX,      -- o [7:0]
+      DATA_READY    => PUSH_TX,       -- o
+      FRAME_END     => FRAME_END      -- o
+     );
     
-    ----- END Asignación de señales de Display -----
+    ----- END Instancia módulo cámara -----
     
     ----- Instancia display -----
     Disp_inst: entity work.DISPLAY(BlackBox)
@@ -160,35 +204,25 @@ begin
     );
     ----- END Instancia display -----
     
-    ----- Instancia DEBOUNCE -----
-    
-      deb_inst : entity work.DEBOUNCE
-       port map (
-        c  => MCLK,
-        r  => RST,
-        sw => BTN(1),  --input
-        db => tx_push_deb   --debounced output
-       );
-
-    
-    ----- END Instancia DEBOUNCE -----
-    
-    ----- Instancia EDGE DETECT -----
-    
-    Edge_inst :entity work.edge_detect
-      port map (
-       c	   => MCLK,
-       level => tx_push_deb, --in
-       tick  => tx_push_edge  --out
-      );
-    
-    ----- END instancia EDGE DETECT -----
-    
     ----- Asingación de salidas -----
     
+    -- FT245
     OEn <= '1';
     PWRSAVn <= '1';
     SIWUn   <= '1';
+    
+    -- Camera
+    XCLK <= PIXCLK;
+    RSTn <= not RST;
+    SDA  <= '0';
+    SCL  <= '0';
+    
+    -- LED
+    LED <= (others => '0');
+    
+    -- Display
+    DDi(15 downto 0) <= (others => '0'); 
+    DPi <= (others => '1');
     
     ----- END Asignación de salidas -----
     
