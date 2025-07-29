@@ -21,7 +21,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 entity FIFO is
     Generic (
-              B : NATURAL := 8; -- Anchura de bus de direcciones. (Imagenes 640x480 y 2 bytes por imagen)
+              B : NATURAL := 12; -- Anchura de bus de direcciones. (Imagenes 640x480 y 2 bytes por imagen)
               W : NATURAL := 8  -- Anchura de los buses de datos.
              );
              
