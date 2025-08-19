@@ -24,8 +24,8 @@ restart
 # Definición de CLK como reloj con periodo 10ns (100 MHz). Valor inicial -> 0.
 add_force {/camera/CLK} -radix bin {0 0ns} {1 5ns} -repeat_every 10ns
 
-# Definición de PIXCLK como reloj con periodo 83.33ns (12 MHz). Valor inicial -> 0.
-add_force {/camera/PIXCLK} -radix bin {0 0ns} {1 41.67ns} -repeat_every 83.33ns
+# Definición de PIXCLK como reloj con periodo 41.67ns (24 MHz). Valor inicial -> 0.
+add_force {/camera/PIXCLK} -radix bin {0 0ns} {1 20.83ns} -repeat_every 41.67ns
 
 # Inicialización de todas las señales a su valor por defecto.
 add_force {/camera/reset}         -radix bin {0 0ns}
@@ -38,7 +38,7 @@ add_force {/camera/IMAGE_REQUEST} -radix bin {0 0ns}
 run 250 ns
 
 # Ejecuta la simulación por 41.66ns para coordinar con los flancos de subida.
-run 41.66ns
+run 41.67ns
 
 ###########################################################
 
@@ -46,7 +46,7 @@ run 41.66ns
 add_force {/camera/IMAGE_REQUEST} -radix bin {1 0ns} {0 10ns}
 add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -54,37 +54,28 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
 add_force {/camera/DATA_IN}       -radix hex {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Segundo dato.
 add_force {/camera/DATA_IN}       -radix hex {2 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
-# Fin de línea.
-add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
-add_force {/camera/DATA_IN}       -radix hex {0 0ns}
-
-run 83.33ns
-
-###########################################################
-
-# Inicio de línea y tercer dato.
-add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+# Tercer dato.
 add_force {/camera/DATA_IN}       -radix hex {3 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Cuarto dato.
 add_force {/camera/DATA_IN}       -radix hex {4 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -92,7 +83,44 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
 add_force {/camera/DATA_IN}       -radix hex {0 0ns}
 
-run 83.33ns
+run 41.67ns
+
+###########################################################
+
+# Inicio de linea y primer dato.
+add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+add_force {/camera/DATA_IN}       -radix hex {1 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Segundo dato.
+add_force {/camera/DATA_IN}       -radix hex {2 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Tercer dato.
+add_force {/camera/DATA_IN}       -radix hex {3 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Cuarto dato.
+add_force {/camera/DATA_IN}       -radix hex {4 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Fin de línea.
+add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
+add_force {/camera/DATA_IN}       -radix hex {0 0ns}
+
+run 41.67ns
 
 ###########################################################
 
@@ -109,14 +137,14 @@ run 250ns
 # Request de imagen.
 add_force {/camera/IMAGE_REQUEST} -radix bin {1 0ns} {0 10ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Inicio de frame.
 add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -124,37 +152,28 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
 add_force {/camera/DATA_IN}       -radix hex {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Segundo dato.
 add_force {/camera/DATA_IN}       -radix hex {2 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
-# Fin de línea.
-add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
-add_force {/camera/DATA_IN}       -radix hex {0 0ns}
-
-run 83.33ns
-
-###########################################################
-
-# Inicio de línea y tercer dato.
-add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+# Tercer dato.
 add_force {/camera/DATA_IN}       -radix hex {3 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Cuarto dato.
 add_force {/camera/DATA_IN}       -radix hex {4 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -162,7 +181,45 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
 add_force {/camera/DATA_IN}       -radix hex {0 0ns}
 
-run 83.33ns
+run 41.67ns
+
+###########################################################
+
+#
+# Inicio de linea y primer dato.
+add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+add_force {/camera/DATA_IN}       -radix hex {1 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Segundo dato.
+add_force {/camera/DATA_IN}       -radix hex {2 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Tercer dato.
+add_force {/camera/DATA_IN}       -radix hex {3 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Cuarto dato.
+add_force {/camera/DATA_IN}       -radix hex {4 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Fin de línea.
+add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
+add_force {/camera/DATA_IN}       -radix hex {0 0ns}
+
+run 41.67ns
 
 ###########################################################
 
@@ -180,7 +237,7 @@ run 250ns
 # Inicio de frame.
 add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -188,44 +245,31 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
 add_force {/camera/DATA_IN}       -radix hex {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Request de imagen.
 add_force {/camera/IMAGE_REQUEST} -radix bin {1 0ns} {0 10ns}
 
-run 83.33ns
-
-###########################################################
-
 # Segundo dato.
 add_force {/camera/DATA_IN}       -radix hex {2 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
-# Fin de línea.
-add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
-add_force {/camera/DATA_IN}       -radix hex {0 0ns}
-
-run 83.33ns
-
-###########################################################
-
-# Inicio de línea y tercer dato.
-add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+# Tercer dato.
 add_force {/camera/DATA_IN}       -radix hex {3 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Cuarto dato.
 add_force {/camera/DATA_IN}       -radix hex {4 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -233,21 +277,7 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
 add_force {/camera/DATA_IN}       -radix hex {0 0ns}
 
-run 83.33ns
-
-###########################################################
-
-# Fin de frame.
-add_force {/camera/FRAME_VALID}    -radix bin {0 0ns}
-
-run 83.33ns
-
-###########################################################
-
-# Inicio de frame.
-add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
-
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -255,37 +285,78 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
 add_force {/camera/DATA_IN}       -radix hex {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Segundo dato.
 add_force {/camera/DATA_IN}       -radix hex {2 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
-# Fin de línea.
-add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
-add_force {/camera/DATA_IN}       -radix hex {0 0ns}
-
-run 83.33ns
-
-###########################################################
-
-# Inicio de línea y tercer dato.
-add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+# Tercer dato.
 add_force {/camera/DATA_IN}       -radix hex {3 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
 # Cuarto dato.
 add_force {/camera/DATA_IN}       -radix hex {4 0ns}
 
-run 83.33ns
+run 41.67ns
+###########################################################
+
+# Fin de línea.
+add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
+add_force {/camera/DATA_IN}       -radix hex {0 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Fin de frame.
+add_force {/camera/FRAME_VALID}    -radix bin {0 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Inicio de frame.
+add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Inicio de linea y primer dato.
+add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+add_force {/camera/DATA_IN}       -radix hex {1 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Segundo dato.
+add_force {/camera/DATA_IN}       -radix hex {2 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Tercer dato.
+add_force {/camera/DATA_IN}       -radix hex {3 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Cuarto dato.
+add_force {/camera/DATA_IN}       -radix hex {4 0ns}
+
+run 41.67ns
 
 ###########################################################
 
@@ -293,7 +364,44 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
 add_force {/camera/DATA_IN}       -radix hex {0 0ns}
 
-run 83.33ns
+run 41.67ns
+
+###########################################################
+
+# Inicio de linea y primer dato.
+add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
+add_force {/camera/DATA_IN}       -radix hex {1 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Segundo dato.
+add_force {/camera/DATA_IN}       -radix hex {2 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Tercer dato.
+add_force {/camera/DATA_IN}       -radix hex {3 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Cuarto dato.
+add_force {/camera/DATA_IN}       -radix hex {4 0ns}
+
+run 41.67ns
+
+###########################################################
+
+# Fin de línea.
+add_force {/camera/LINE_VALID}    -radix bin {0 0ns}
+add_force {/camera/DATA_IN}       -radix hex {0 0ns}
+
+run 41.67ns
 
 ###########################################################
 
@@ -314,7 +422,7 @@ add_force {/camera/FRAME_VALID}   -radix bin {1 0ns}
 # Request de imagen.
 add_force {/camera/IMAGE_REQUEST} -radix bin {1 0ns} {0 10ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 
@@ -322,7 +430,7 @@ run 83.33ns
 add_force {/camera/LINE_VALID}    -radix bin {1 0ns}
 add_force {/camera/DATA_IN}       -radix hex {1 0ns}
 
-run 83.33ns
+run 41.67ns
 
 ###########################################################
 

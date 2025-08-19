@@ -75,7 +75,7 @@ architecture Behavioral of camera is
     alias PCLK_REG        : STD_LOGIC is pixclk_reg(0);
 
     -- Señales de la máquina de estados.
-    type STATES is (IDLE, WAIT_FOR_IMAGE, WAIT_FOR_FRAME, WAIT_FOR_LINE, WAIT_FOR_DATA, DATA_SEND, SEND_STOP);
+    type STATES is (IDLE, WAIT_FOR_IMAGE, WAIT_FOR_FRAME, WAIT_FOR_LINE, WAIT_FOR_DATA, WAIT_FOR_SKIP, SKIP_STOP, SEND_STOP);
     signal state_reg, state_next : STATES;
     
     -- Señales para la captura de datos.
@@ -106,7 +106,6 @@ begin
     
     ----- END Sincronizador -----
 
-    -- TODO: Incluir registros extra.
     ----- State register. -----
     
     process (CLK, reset)
@@ -157,10 +156,17 @@ begin
             
             when WAIT_FOR_LINE =>
                 if LINE_VALID_REG = '1' then
-                    state_next <= WAIT_FOR_DATA;
+                    state_next <= WAIT_FOR_SKIP;
                 elsif FRAME_VALID_REG = '0' then
                     state_next <= IDLE;
                     frame_end_next <= '1';
+                end if;
+                
+            when WAIT_FOR_SKIP =>
+                if LINE_VALID_REG = '0' then
+                    state_next <= WAIT_FOR_LINE;
+                elsif PCLK_REG = '1' then
+                    state_next <= SKIP_STOP;
                 end if;
                 
             when WAIT_FOR_DATA =>
@@ -168,16 +174,18 @@ begin
                 if LINE_VALID_REG = '0' then
                     state_next <= WAIT_FOR_LINE;
                 elsif PCLK_REG = '1' then
-                    state_next <= DATA_SEND;
+                    send_enable_next <= '1';
+                    state_next <= SEND_STOP;
                 end if;
                 
-            when DATA_SEND =>
-                send_enable_next <= '1';
-                state_next       <= SEND_STOP;
+            when SKIP_STOP =>
+                if PCLK_REG = '0' then
+                    state_next <= WAIT_FOR_DATA;
+                end if;
                 
             when SEND_STOP =>
                 if PCLK_REG = '0' then
-                    state_next <= WAIT_FOR_DATA;
+                    state_next <= WAIT_FOR_SKIP;
                 end if;
                 
             when others =>
